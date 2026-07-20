@@ -60,37 +60,39 @@ export function getColumnCount(width) {
   return 1;
 }
 
-export function advanceOrb(orb, deltaSeconds, bounds) {
-  if (orb.paused || orb.dragging) {
-    return { ...orb };
+export function advanceRainDrop(rainDrop, deltaSeconds, bounds) {
+  if (rainDrop.paused || rainDrop.dragging) {
+    return { ...rainDrop };
   }
 
-  let x = orb.x + orb.vx * deltaSeconds;
-  let y = orb.y + orb.vy * deltaSeconds;
-  let vx = orb.vx;
-  let vy = orb.vy;
+  let x = rainDrop.x + rainDrop.vx * deltaSeconds;
+  let y = rainDrop.y + rainDrop.vy * deltaSeconds;
+  let vx = rainDrop.vx;
+  let vy = rainDrop.vy;
 
-  if (x - orb.r < bounds.left) {
-    x = bounds.left + orb.r;
+  if (x - rainDrop.r < bounds.left) {
+    x = bounds.left + rainDrop.r;
     vx = Math.abs(vx);
-  } else if (x + orb.r > bounds.right) {
-    x = bounds.right - orb.r;
+  } else if (x + rainDrop.r > bounds.right) {
+    x = bounds.right - rainDrop.r;
     vx = -Math.abs(vx);
   }
 
-  if (y - orb.r < bounds.top) {
-    y = bounds.top + orb.r;
+  if (y - rainDrop.r < bounds.top) {
+    y = bounds.top + rainDrop.r;
     vy = Math.abs(vy);
-  } else if (y + orb.r > bounds.bottom) {
-    y = bounds.bottom - orb.r;
+  } else if (y + rainDrop.r > bounds.bottom) {
+    y = bounds.bottom - rainDrop.r;
     vy = -Math.abs(vy);
   }
 
-  return { ...orb, x, y, vx, vy };
+  return { ...rainDrop, x, y, vx, vy };
 }
 
-export function advanceOrbCollection(orbs, activeOrbId, deltaSeconds, bounds) {
-  return orbs.map((orb) =>
-    orb.id === activeOrbId ? orb : advanceOrb(orb, deltaSeconds, bounds),
+export function advanceRainDropCollection(rainDrops, activeRainDropId, deltaSeconds, bounds) {
+  return rainDrops.map((rainDrop) =>
+    rainDrop.id === activeRainDropId
+      ? rainDrop
+      : advanceRainDrop(rainDrop, deltaSeconds, bounds),
   );
 }

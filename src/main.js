@@ -1,37 +1,26 @@
-import {
-  layout,
-  layoutNextLine,
-  layoutWithLines,
-  prepareWithSegments,
-  walkLineRanges,
-} from "@chenglou/pretext";
+import { layoutNextLine, prepareWithSegments } from "@chenglou/pretext";
 
 import {
-  advanceOrbCollection,
+  advanceRainDropCollection,
   carveTextLineSlots,
   circleIntervalForBand,
   getColumnCount,
 } from "./layout-geometry.js";
 import { CHAPTERS, STORY_PARAGRAPHS, getChapterIndex } from "./story.js";
 
+document.documentElement.classList.add("js");
+
 const BODY_FONT_FAMILY = '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif';
-const HEADLINE_FONT_FAMILY = 'Arial, Helvetica, sans-serif';
 const BODY_FONT = `16px ${BODY_FONT_FAMILY}`;
 const BODY_LINE_HEIGHT = 25;
-const PULLQUOTE_FONT = `italic 18px ${BODY_FONT_FAMILY}`;
-const PULLQUOTE_LINE_HEIGHT = 25;
-const COLUMN_GAP = 30;
-const ROW_GAP = 62;
+const COLUMN_GAP = 32;
+const ROW_GAP = 72;
 const MAX_LAYOUT_ROWS = 12;
 
 const stage = document.querySelector("#stage");
 const rainCanvas = document.querySelector("#rainField");
 const rainContext = rainCanvas.getContext("2d", { alpha: true });
-const headlineLayer = document.querySelector("#headlineLayer");
 const bodyLayer = document.querySelector("#bodyLayer");
-const pullquoteLayer = document.querySelector("#pullquoteLayer");
-const pullquoteRule = document.querySelector("#pullquoteRule");
-const kanjiCoda = document.querySelector("#kanjiCoda");
 const chapterEyebrow = document.querySelector("#chapterEyebrow");
 const chapterLabel = document.querySelector("#chapterLabel");
 const chapterTitle = document.querySelector("#chapterTitle");
@@ -61,61 +50,54 @@ const viewport = {
 
 let currentChapterIndex = 0;
 let currentPreparedBody;
-let currentPreparedPullquote;
 let motionHeld = reducedMotionQuery.matches;
 let stageHeight = viewport.height;
-let bodyTop = 250;
-let firstRowBottom = viewport.height - 110;
+let textTop = 560;
+let textBottom = viewport.height - 120;
 let lastFrameTime = performance.now();
 let animationFrame = null;
 let needsRender = true;
-let cachedHeadline = { key: "", size: 0, lineHeight: 0, lines: [] };
-let activeOrb = null;
+let activeRainDrop = null;
 let readingReturnFocus = null;
 let pointerX = -10_000;
 let pointerY = -10_000;
 let rainPhase = 0;
 const frameTimes = [];
-
-const headlinePool = [];
 const bodyLinePool = [];
-const pullquotePool = [];
 
-const orbDefinitions = [
-  { id: "toad", label: "Toad", fx: 0.54, fy: 0.31, r: 72, vx: 17, vy: 12, color: "#68546d" },
-  { id: "crab", label: "Crab", fx: 0.18, fy: 0.52, r: 58, vx: -13, vy: 18, color: "#8a6a3f" },
-  { id: "tiger", label: "Tiger", fx: 0.78, fy: 0.56, r: 69, vx: 11, vy: -16, color: "#71664f" },
-  { id: "bear", label: "Bear", fx: 0.39, fy: 0.7, r: 64, vx: -18, vy: -9, color: "#526257" },
-  { id: "wasp", label: "Wasp", fx: 0.87, fy: 0.28, r: 49, vx: -10, vy: 15, color: "#8f7b42" },
-  { id: "fox", label: "Fox", fx: 0.28, fy: 0.36, r: 56, vx: 15, vy: -12, color: "#7b5945" },
+const rainDropDefinitions = [
+  { id: "drop-01", fx: 0.48, fy: 0.23, r: 27, vx: 7, vy: 25, tone: "ink" },
+  { id: "drop-02", fx: 0.62, fy: 0.36, r: 24, vx: -5, vy: 31, tone: "plum" },
+  { id: "drop-03", fx: 0.78, fy: 0.18, r: 30, vx: 4, vy: 22, tone: "ink" },
+  { id: "drop-04", fx: 0.9, fy: 0.49, r: 25, vx: -7, vy: 28, tone: "ink" },
+  { id: "drop-05", fx: 0.16, fy: 0.7, r: 26, vx: 5, vy: 24, tone: "plum" },
+  { id: "drop-06", fx: 0.34, fy: 0.82, r: 23, vx: -4, vy: 29, tone: "ink" },
+  { id: "drop-07", fx: 0.54, fy: 0.68, r: 29, vx: 6, vy: 21, tone: "ink" },
+  { id: "drop-08", fx: 0.73, fy: 0.84, r: 24, vx: -5, vy: 27, tone: "plum" },
+  { id: "drop-09", fx: 0.89, fy: 0.73, r: 28, vx: 4, vy: 23, tone: "ink" },
 ];
 
-let orbs = orbDefinitions.map((definition) => {
+let rainDrops = rainDropDefinitions.map((definition) => {
   const element = document.createElement("div");
-  element.className = "rain-cell";
-  element.dataset.character = definition.id;
-  element.style.setProperty("--cell-color", definition.color);
-  const label = document.createElement("span");
-  label.className = "cell-name";
-  label.textContent = definition.label;
-  element.appendChild(label);
+  element.className = "rain-drop";
+  element.dataset.tone = definition.tone;
   stage.appendChild(element);
 
   return {
     ...definition,
     x: definition.fx * viewport.width,
-    y: Math.max(300, definition.fy * viewport.height),
+    y: Math.max(160, definition.fy * viewport.height),
     paused: false,
     dragging: false,
     dragStartX: 0,
     dragStartY: 0,
-    dragStartOrbX: 0,
-    dragStartOrbY: 0,
+    dragStartDropX: 0,
+    dragStartDropY: 0,
     element,
   };
 });
 
-const rainMarks = createRainMarks(48, 42);
+const rainMarks = createRainMarks(34, 24);
 
 function createRainMarks(columns, rows) {
   let seed = 1_966;
@@ -129,12 +111,12 @@ function createRainMarks(columns, rows) {
     const row = Math.floor(index / columns);
 
     return {
-      x: (column + 0.5 + (random() - 0.5) * 0.18) / columns,
-      y: (row + 0.5 + (random() - 0.5) * 0.14) / rows,
+      x: (column + 0.5 + (random() - 0.5) * 0.16) / columns,
+      y: (row + 0.5 + (random() - 0.5) * 0.12) / rows,
       reveal: random(),
       phase: random() * Math.PI * 2,
-      length: 3.2 + random() * 2.6,
-      weight: 0.55 + random() * 0.55,
+      length: 3.4 + random() * 2.1,
+      weight: 0.62 + random() * 0.5,
     };
   });
 }
@@ -152,56 +134,69 @@ function syncPool(pool, count, className, parent) {
   });
 }
 
-function fitHeadline(text, maxWidth, maxHeight) {
-  const key = `${text}:${Math.round(maxWidth)}:${Math.round(maxHeight)}`;
-  if (cachedHeadline.key === key) return cachedHeadline;
+function getCompositionMetrics() {
+  const isCompact = viewport.width <= 760;
+  const gutter = isCompact ? 20 : Math.max(48, Math.round(viewport.width * 0.055));
+  const titleTop = isCompact ? 88 : 104;
+  const titleWidth = isCompact
+    ? viewport.width - gutter * 2
+    : Math.min(580, Math.round(viewport.width * 0.37));
+  const titleHeight = isCompact ? (viewport.width < 420 ? 265 : 315) : 390;
 
-  let low = viewport.width < 640 ? 30 : 38;
-  let high = viewport.width < 640 ? 62 : 104;
-  let bestSize = low;
-  let bestLineHeight = Math.round(low * 0.88);
-  let bestLines = [];
+  stage.style.setProperty("--title-left", `${gutter}px`);
+  stage.style.setProperty("--title-top", `${titleTop}px`);
+  stage.style.setProperty("--title-width", `${titleWidth}px`);
 
-  while (low <= high) {
-    const size = Math.floor((low + high) / 2);
-    const font = `800 ${size}px ${HEADLINE_FONT_FAMILY}`;
-    const lineHeight = Math.round(size * 0.88);
-    const prepared = prepareWithSegments(text, font);
-    let breaksWord = false;
-    let lineCount = 0;
-
-    walkLineRanges(prepared, maxWidth, (line) => {
-      lineCount += 1;
-      if (line.end.graphemeIndex !== 0) breaksWord = true;
-    });
-
-    if (!breaksWord && lineCount * lineHeight <= maxHeight) {
-      const result = layoutWithLines(prepared, maxWidth, lineHeight);
-      bestSize = size;
-      bestLineHeight = lineHeight;
-      bestLines = result.lines;
-      low = size + 1;
-    } else {
-      high = size - 1;
-    }
+  if (isCompact) {
+    const firstTop = titleTop + titleHeight + 42;
+    const firstHeight = Math.max(500, viewport.height - firstTop - 120);
+    return {
+      columnCount: 1,
+      gutter,
+      initialRegions: [
+        { x: gutter, y: firstTop, width: viewport.width - gutter * 2, height: firstHeight },
+      ],
+      overflowTop: firstTop + firstHeight + ROW_GAP,
+      overflowRowHeight: 560,
+      titleBottom: titleTop + titleHeight,
+    };
   }
 
-  cachedHeadline = {
-    key,
-    size: bestSize,
-    lineHeight: bestLineHeight,
-    lines: bestLines,
+  const columnCount = getColumnCount(viewport.width);
+  const topRightX = Math.max(gutter + titleWidth + 76, Math.round(viewport.width * 0.45));
+  const topRightWidth = viewport.width - gutter - topRightX;
+  const topHeight = Math.max(320, Math.min(410, viewport.height * 0.46));
+  const lowerTop = Math.max(titleTop + titleHeight + 64, titleTop + topHeight + 44);
+  const lowerBottom = Math.max(viewport.height - 118, lowerTop + 300);
+  const contentWidth = viewport.width - gutter * 2;
+  const columnWidth = Math.floor(
+    (contentWidth - COLUMN_GAP * (columnCount - 1)) / columnCount,
+  );
+  const initialRegions = [
+    { x: topRightX, y: titleTop + 8, width: topRightWidth, height: topHeight },
+  ];
+
+  for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+    initialRegions.push({
+      x: gutter + columnIndex * (columnWidth + COLUMN_GAP),
+      y: lowerTop,
+      width: columnWidth,
+      height: lowerBottom - lowerTop,
+    });
+  }
+
+  return {
+    columnCount,
+    gutter,
+    columnWidth,
+    initialRegions,
+    overflowTop: lowerBottom + ROW_GAP,
+    overflowRowHeight: Math.max(390, Math.min(580, viewport.height - 170)),
+    titleBottom: titleTop + titleHeight,
   };
-  return cachedHeadline;
 }
 
-function layoutColumn(
-  prepared,
-  startCursor,
-  region,
-  circleObstacles,
-  rectangleObstacles,
-) {
+function layoutRegion(prepared, startCursor, region, blockers, rectangleBlockers) {
   let cursor = startCursor;
   let lineTop = region.y;
   const lines = [];
@@ -209,31 +204,29 @@ function layoutColumn(
 
   while (lineTop + BODY_LINE_HEIGHT <= region.y + region.height && !exhausted) {
     const bandBottom = lineTop + BODY_LINE_HEIGHT;
-    const circleBlocks = circleObstacles
-      .map((circle) =>
+    const blockedIntervals = blockers
+      .map((rainDrop) =>
         circleIntervalForBand(
-          circle.x,
-          circle.y,
-          circle.r,
+          rainDrop.x,
+          rainDrop.y,
+          rainDrop.r,
           lineTop,
           bandBottom,
-          12,
-          3,
+          14,
+          5,
         ),
       )
       .filter(Boolean);
-    const rectangleBlocks = rectangleObstacles
-      .filter((rectangle) => bandBottom > rectangle.y && lineTop < rectangle.y + rectangle.height)
+    const rectangleIntervals = rectangleBlockers
+      .filter(
+        (rectangle) =>
+          bandBottom > rectangle.y && lineTop < rectangle.y + rectangle.height,
+      )
       .map((rectangle) => ({ left: rectangle.x, right: rectangle.x + rectangle.width }));
     const slots = carveTextLineSlots(
       { left: region.x, right: region.x + region.width },
-      [...circleBlocks, ...rectangleBlocks],
+      [...blockedIntervals, ...rectangleIntervals],
     ).sort((a, b) => a.left - b.left);
-
-    if (slots.length === 0) {
-      lineTop += BODY_LINE_HEIGHT;
-      continue;
-    }
 
     for (const slot of slots) {
       const line = layoutNextLine(prepared, cursor, slot.right - slot.left);
@@ -251,120 +244,66 @@ function layoutColumn(
   return { cursor, exhausted, lines };
 }
 
-function createPullquotePlacement(chapter, contentLeft, columnWidth, rowHeight, columnCount) {
-  if (viewport.width <= 640 || columnCount === 1) return null;
+function createOverflowRegions(metrics, rowIndex) {
+  const rowTop = metrics.overflowTop + rowIndex * (metrics.overflowRowHeight + ROW_GAP);
+  const contentWidth = viewport.width - metrics.gutter * 2;
+  const columnWidth =
+    metrics.columnWidth ??
+    Math.floor((contentWidth - COLUMN_GAP * (metrics.columnCount - 1)) / metrics.columnCount);
 
-  const width = Math.round(columnWidth * 0.6);
-  const result = layout(currentPreparedPullquote, width - 22, PULLQUOTE_LINE_HEIGHT);
-  const x = contentLeft + columnWidth - width;
-  const y = Math.round(bodyTop + rowHeight * 0.44);
-
-  return {
-    chapter,
-    x,
-    y,
-    width,
-    height: result.height + 18,
-  };
-}
-
-function renderPullquote(placement) {
-  if (!placement) {
-    pullquoteRule.style.display = "none";
-    syncPool(pullquotePool, 0, "pullquote-line", pullquoteLayer);
-    return;
-  }
-
-  const result = layoutWithLines(
-    currentPreparedPullquote,
-    placement.width - 22,
-    PULLQUOTE_LINE_HEIGHT,
-  );
-  syncPool(pullquotePool, result.lines.length, "pullquote-line", pullquoteLayer);
-  pullquoteRule.style.display = "block";
-  pullquoteRule.style.left = `${placement.x}px`;
-  pullquoteRule.style.top = `${placement.y}px`;
-  pullquoteRule.style.height = `${placement.height}px`;
-
-  result.lines.forEach((line, index) => {
-    const element = pullquotePool[index];
-    element.textContent = line.text;
-    element.style.left = `${placement.x + 18}px`;
-    element.style.top = `${placement.y + 8 + index * PULLQUOTE_LINE_HEIGHT}px`;
-    element.style.font = PULLQUOTE_FONT;
-    element.style.lineHeight = `${PULLQUOTE_LINE_HEIGHT}px`;
-  });
+  return Array.from({ length: metrics.columnCount }, (_, columnIndex) => ({
+    x: metrics.gutter + columnIndex * (columnWidth + COLUMN_GAP),
+    y: rowTop,
+    width: columnWidth,
+    height: metrics.overflowRowHeight,
+  }));
 }
 
 function renderEditorialLayout() {
   const startedAt = performance.now();
-  const chapter = CHAPTERS[currentChapterIndex];
-  const horizontalGutter = viewport.width < 640 ? 22 : 48;
-  const headlineTop = viewport.width < 640 ? 116 : 118;
-  const headlineWidth = Math.min(viewport.width - horizontalGutter * 2, 1180);
-  const headline = fitHeadline(chapter.title, headlineWidth, viewport.width < 640 ? 170 : 190);
-  const headlineFont = `800 ${headline.size}px ${HEADLINE_FONT_FAMILY}`;
-  const headlineHeight = headline.lines.length * headline.lineHeight;
-
-  syncPool(headlinePool, headline.lines.length, "headline-line", headlineLayer);
-  headline.lines.forEach((line, index) => {
-    const element = headlinePool[index];
-    element.textContent = line.text;
-    element.style.left = `${horizontalGutter}px`;
-    element.style.top = `${headlineTop + index * headline.lineHeight}px`;
-    element.style.font = headlineFont;
-    element.style.lineHeight = `${headline.lineHeight}px`;
-  });
-
-  bodyTop = headlineTop + headlineHeight + (viewport.width < 640 ? 42 : 52);
-  const columnCount = getColumnCount(viewport.width);
-  const contentWidth = Math.min(viewport.width, 1500) - horizontalGutter * 2;
-  const columnWidth = Math.floor(
-    (contentWidth - COLUMN_GAP * (columnCount - 1)) / columnCount,
-  );
-  const occupiedWidth = columnWidth * columnCount + COLUMN_GAP * (columnCount - 1);
-  const contentLeft = Math.round((viewport.width - occupiedWidth) / 2);
-  const rowHeight = Math.max(360, Math.min(620, viewport.height - bodyTop - 110));
-  const pullquote = createPullquotePlacement(
-    chapter,
-    contentLeft,
-    columnWidth,
-    rowHeight,
-    columnCount,
-  );
-  const activeIds = new Set(chapter.companions);
-  const activeOrbs = orbs.filter((orb) => activeIds.has(orb.id));
+  const metrics = getCompositionMetrics();
   const allLines = [];
   let cursor = { segmentIndex: 0, graphemeIndex: 0 };
   let exhausted = false;
-  let finalRowIndex = 0;
+  let finalBottom = metrics.initialRegions.at(-1).y + metrics.initialRegions.at(-1).height;
+  const kanjiBlocker =
+    viewport.width <= 760
+      ? {
+          x: metrics.gutter,
+          y: viewport.height - 168,
+          width: viewport.width - metrics.gutter * 2,
+          height: 88,
+        }
+      : {
+          x: viewport.width / 2 - 74,
+          y: viewport.height - 168,
+          width: 148,
+          height: 88,
+        };
+
+  for (const region of metrics.initialRegions) {
+    if (exhausted) break;
+    const result = layoutRegion(currentPreparedBody, cursor, region, rainDrops, [kanjiBlocker]);
+    allLines.push(...result.lines);
+    cursor = result.cursor;
+    exhausted = result.exhausted;
+  }
 
   for (let rowIndex = 0; rowIndex < MAX_LAYOUT_ROWS && !exhausted; rowIndex += 1) {
-    const rowTop = bodyTop + rowIndex * (rowHeight + ROW_GAP);
-    finalRowIndex = rowIndex;
-
-    for (let columnIndex = 0; columnIndex < columnCount && !exhausted; columnIndex += 1) {
-      const columnX = contentLeft + columnIndex * (columnWidth + COLUMN_GAP);
-      const result = layoutColumn(
-        currentPreparedBody,
-        cursor,
-        { x: columnX, y: rowTop, width: columnWidth, height: rowHeight },
-        rowIndex === 0 ? activeOrbs : [],
-        rowIndex === 0 && columnIndex === 0 && pullquote
-          ? [pullquote]
-          : [],
-      );
+    const regions = createOverflowRegions(metrics, rowIndex);
+    finalBottom = regions[0].y + regions[0].height;
+    for (const region of regions) {
+      if (exhausted) break;
+      const result = layoutRegion(currentPreparedBody, cursor, region, rainDrops, [kanjiBlocker]);
       allLines.push(...result.lines);
       cursor = result.cursor;
       exhausted = result.exhausted;
     }
   }
 
-  stageHeight = Math.max(
-    viewport.height,
-    bodyTop + (finalRowIndex + 1) * rowHeight + finalRowIndex * ROW_GAP + 150,
-  );
-  firstRowBottom = bodyTop + rowHeight;
+  stageHeight = Math.max(viewport.height, finalBottom + 190);
+  textTop = Math.min(...metrics.initialRegions.map((region) => region.y));
+  textBottom = Math.max(...metrics.initialRegions.map((region) => region.y + region.height));
   stage.style.height = `${stageHeight}px`;
   resizeRainCanvas();
 
@@ -378,31 +317,26 @@ function renderEditorialLayout() {
     element.style.lineHeight = `${BODY_LINE_HEIGHT}px`;
   });
 
-  renderPullquote(pullquote);
-  renderOrbs(activeIds);
-  drawRain(performance.now(), chapter.rainLevel);
+  renderRainDrops();
+  drawRain(performance.now(), CHAPTERS[currentChapterIndex].rainLevel, metrics.titleBottom);
 
   const elapsed = performance.now() - startedAt;
   statLines.textContent = String(allLines.length);
   statReflow.textContent = `${elapsed.toFixed(1)}ms`;
-  statColumns.textContent = String(columnCount);
-  stage.dataset.columns = String(columnCount);
+  statColumns.textContent = String(metrics.columnCount);
+  stage.dataset.columns = String(metrics.columnCount);
   stage.dataset.lines = String(allLines.length);
   stage.dataset.chapter = String(currentChapterIndex + 1);
   stage.dataset.complete = String(exhausted);
 }
 
-function renderOrbs(activeIds) {
-  orbs.forEach((orb) => {
-    const isActive = activeIds.has(orb.id);
-    orb.element.hidden = !isActive;
-    if (!isActive) return;
-
-    orb.element.style.left = `${orb.x - orb.r}px`;
-    orb.element.style.top = `${orb.y - orb.r}px`;
-    orb.element.style.width = `${orb.r * 2}px`;
-    orb.element.style.height = `${orb.r * 2}px`;
-    orb.element.classList.toggle("paused", orb.paused);
+function renderRainDrops() {
+  rainDrops.forEach((rainDrop) => {
+    rainDrop.element.style.left = `${rainDrop.x - rainDrop.r}px`;
+    rainDrop.element.style.top = `${rainDrop.y - rainDrop.r}px`;
+    rainDrop.element.style.width = `${rainDrop.r * 2}px`;
+    rainDrop.element.style.height = `${rainDrop.r * 2}px`;
+    rainDrop.element.classList.toggle("paused", rainDrop.paused);
   });
 }
 
@@ -416,67 +350,66 @@ function resizeRainCanvas() {
   rainContext.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
 }
 
-function drawRain(now, density) {
+function drawRain(now, density, titleBottom) {
   rainContext.clearRect(0, 0, viewport.width, stageHeight);
   rainContext.strokeStyle = "#16191a";
   rainContext.lineCap = "round";
-  const visibleDensity = Math.max(0.06, density);
-  const drift = motionHeld ? rainPhase : now * 0.00038;
+  const visibleDensity = 0.58 + density * 0.42;
+  const drift = motionHeld ? rainPhase : now * 0.00022;
   if (!motionHeld) rainPhase = drift;
 
   rainMarks.forEach((mark, index) => {
     if (mark.reveal > visibleDensity) return;
-    const wave = Math.sin(mark.phase + drift * 5 + index * 0.007);
-    const x = mark.x * viewport.width + wave * (2 + density * 5);
+    if (viewport.width <= 760 && index % 2 === 0) return;
     const y = mark.y * stageHeight;
-    const bandStrength = density > 0.4 && Math.floor(mark.y * 42) % 9 === 0 ? 1.55 : 1;
-    const length = mark.length * bandStrength;
+    const baseX = mark.x * viewport.width;
+    const titleQuietZone =
+      (viewport.width > 760 && baseX < viewport.width * 0.43 && y < titleBottom + 44) ||
+      (viewport.width <= 760 && y < titleBottom + 32);
+    if (titleQuietZone) return;
 
-    rainContext.globalAlpha = (0.2 + density * 0.46) * mark.weight;
-    rainContext.lineWidth = Math.max(0.6, mark.weight);
+    const wave = Math.sin(mark.phase + drift * 5 + index * 0.009);
+    const x = baseX + wave * (1.5 + density * 3.5);
+    rainContext.globalAlpha = (0.2 + density * 0.24) * mark.weight;
+    rainContext.lineWidth = Math.max(0.65, mark.weight);
     rainContext.beginPath();
-    rainContext.moveTo(x - 3, y - length / 2);
-    rainContext.lineTo(x, y + length / 2);
-    rainContext.moveTo(x + 4, y - length / 2);
-    rainContext.lineTo(x + 7, y + length / 2);
+    rainContext.moveTo(x - 3, y - mark.length / 2);
+    rainContext.lineTo(x, y + mark.length / 2);
+    rainContext.moveTo(x + 4, y - mark.length / 2);
+    rainContext.lineTo(x + 7, y + mark.length / 2);
     rainContext.stroke();
   });
 
   rainContext.globalAlpha = 1;
 }
 
-function hitTestOrbs(x, y) {
-  const activeIds = new Set(CHAPTERS[currentChapterIndex].companions);
-  for (let index = orbs.length - 1; index >= 0; index -= 1) {
-    const orb = orbs[index];
-    if (!activeIds.has(orb.id)) continue;
-    const deltaX = x - orb.x;
-    const deltaY = y - orb.y;
-    if (deltaX * deltaX + deltaY * deltaY <= orb.r * orb.r) return orb;
+function hitTestRainDrops(x, y) {
+  for (let index = rainDrops.length - 1; index >= 0; index -= 1) {
+    const rainDrop = rainDrops[index];
+    const deltaX = x - rainDrop.x;
+    const deltaY = y - rainDrop.y;
+    if (deltaX * deltaX + deltaY * deltaY <= rainDrop.r * rainDrop.r) return rainDrop;
   }
   return null;
 }
 
-function updateOrbs(deltaSeconds) {
-  const activeIds = new Set(CHAPTERS[currentChapterIndex].companions);
+function updateRainDrops(deltaSeconds) {
   const bounds = {
     left: 8,
     right: viewport.width - 8,
-    top: bodyTop,
-    bottom: firstRowBottom,
+    top: Math.max(88, textTop - 34),
+    bottom: Math.max(textTop + 220, textBottom),
   };
 
-  const advancingOrbs = orbs.map((orb) =>
-    activeIds.has(orb.id) ? orb : { ...orb, paused: true },
-  );
-  orbs = advanceOrbCollection(
-    advancingOrbs,
-    activeOrb?.id ?? null,
+  rainDrops = advanceRainDropCollection(
+    rainDrops,
+    activeRainDrop?.id ?? null,
     deltaSeconds,
     bounds,
-  ).map((orb, index) =>
-    activeIds.has(orb.id) ? orb : { ...orb, paused: orbs[index].paused },
-  );
+  ).map((rainDrop) => {
+    if (rainDrop.dragging || rainDrop.paused || rainDrop.vy >= 0) return rainDrop;
+    return { ...rainDrop, y: bounds.top + rainDrop.r, vy: Math.abs(rainDrop.vy) };
+  });
 }
 
 function updateFps(now) {
@@ -490,14 +423,14 @@ function animate(now) {
   const deltaSeconds = Math.min((now - lastFrameTime) / 1_000, 0.05);
   lastFrameTime = now;
 
-  if (!motionHeld) updateOrbs(deltaSeconds);
-  if (needsRender || !motionHeld || activeOrb) {
+  if (!motionHeld) updateRainDrops(deltaSeconds);
+  if (needsRender || !motionHeld || activeRainDrop) {
     renderEditorialLayout();
     needsRender = false;
   }
   updateFps(now);
 
-  if (!motionHeld || activeOrb) scheduleFrame();
+  if (!motionHeld || activeRainDrop) scheduleFrame();
 }
 
 function scheduleFrame() {
@@ -508,15 +441,11 @@ function prepareChapter(index) {
   currentChapterIndex = getChapterIndex(index);
   const chapter = CHAPTERS[currentChapterIndex];
   currentPreparedBody = prepareWithSegments(chapter.paragraphs.join("\n\n"), BODY_FONT);
-  currentPreparedPullquote = prepareWithSegments(`“${chapter.pullquote}”`, PULLQUOTE_FONT);
-  cachedHeadline = { key: "", size: 0, lineHeight: 0, lines: [] };
   chapterEyebrow.textContent = chapter.eyebrow;
   chapterLabel.textContent = `Chapter ${currentChapterIndex + 1} of ${CHAPTERS.length}`;
   chapterTitle.textContent = chapter.title.replaceAll("/", "").toLowerCase();
   previousChapter.disabled = currentChapterIndex === 0;
   nextChapter.disabled = currentChapterIndex === CHAPTERS.length - 1;
-  kanjiCoda.textContent = chapter.kanji;
-  kanjiCoda.classList.toggle("visible", Boolean(chapter.kanji));
   needsRender = true;
   scheduleFrame();
 }
@@ -538,6 +467,8 @@ function setMotionHeld(held) {
 }
 
 function buildReadingEdition() {
+  if (storyBody.children.length > 0) return;
+
   CHAPTERS.forEach((chapter) => {
     const section = document.createElement("section");
     section.className = "story-section";
@@ -560,6 +491,8 @@ function buildReadingEdition() {
 function openReadingEdition() {
   readingReturnFocus = document.activeElement;
   setMotionHeld(true);
+  fullStory.setAttribute("role", "dialog");
+  fullStory.setAttribute("aria-modal", "true");
   document.body.classList.add("reading-open");
   masthead.inert = true;
   visualEdition.inert = true;
@@ -571,6 +504,8 @@ function openReadingEdition() {
 
 function closeReadingEdition() {
   document.body.classList.remove("reading-open");
+  fullStory.removeAttribute("role");
+  fullStory.removeAttribute("aria-modal");
   masthead.inert = false;
   visualEdition.inert = false;
   motionControl.inert = false;
@@ -585,30 +520,29 @@ function updateViewport() {
   viewport.width = window.innerWidth;
   viewport.height = window.innerHeight;
   viewport.dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const top = Math.max(280, bodyTop);
-  const bottom = Math.max(top + 200, viewport.height - 110);
+  const top = 100;
+  const bottom = Math.max(top + 240, viewport.height - 110);
 
-  orbs = orbs.map((orb) => ({
-    ...orb,
-    x: Math.max(orb.r + 8, Math.min(viewport.width - orb.r - 8, orb.x)),
-    y: Math.max(top + orb.r, Math.min(bottom - orb.r, orb.y)),
+  rainDrops = rainDrops.map((rainDrop) => ({
+    ...rainDrop,
+    x: Math.max(rainDrop.r + 8, Math.min(viewport.width - rainDrop.r - 8, rainDrop.x)),
+    y: Math.max(top + rainDrop.r, Math.min(bottom - rainDrop.r, rainDrop.y)),
   }));
-  cachedHeadline = { key: "", size: 0, lineHeight: 0, lines: [] };
   needsRender = true;
   scheduleFrame();
 }
 
 stage.addEventListener("pointerdown", (event) => {
   const documentY = event.clientY + window.scrollY;
-  const orb = hitTestOrbs(event.clientX, documentY);
-  if (!orb) return;
+  const rainDrop = hitTestRainDrops(event.clientX, documentY);
+  if (!rainDrop) return;
 
-  activeOrb = orb;
-  orb.dragging = true;
-  orb.dragStartX = event.clientX;
-  orb.dragStartY = documentY;
-  orb.dragStartOrbX = orb.x;
-  orb.dragStartOrbY = orb.y;
+  activeRainDrop = rainDrop;
+  rainDrop.dragging = true;
+  rainDrop.dragStartX = event.clientX;
+  rainDrop.dragStartY = documentY;
+  rainDrop.dragStartDropX = rainDrop.x;
+  rainDrop.dragStartDropY = rainDrop.y;
   stage.setPointerCapture(event.pointerId);
   event.preventDefault();
   scheduleFrame();
@@ -617,31 +551,33 @@ stage.addEventListener("pointerdown", (event) => {
 stage.addEventListener("pointermove", (event) => {
   pointerX = event.clientX;
   pointerY = event.clientY + window.scrollY;
-  if (!activeOrb) return;
+  if (!activeRainDrop) return;
 
-  activeOrb.x = activeOrb.dragStartOrbX + (pointerX - activeOrb.dragStartX);
-  activeOrb.y = activeOrb.dragStartOrbY + (pointerY - activeOrb.dragStartY);
+  activeRainDrop.x = activeRainDrop.dragStartDropX + (pointerX - activeRainDrop.dragStartX);
+  activeRainDrop.y = activeRainDrop.dragStartDropY + (pointerY - activeRainDrop.dragStartY);
   needsRender = true;
   scheduleFrame();
 });
 
 stage.addEventListener("pointerup", (event) => {
-  if (!activeOrb) return;
+  if (!activeRainDrop) return;
   const documentY = event.clientY + window.scrollY;
-  const deltaX = event.clientX - activeOrb.dragStartX;
-  const deltaY = documentY - activeOrb.dragStartY;
+  const deltaX = event.clientX - activeRainDrop.dragStartX;
+  const deltaY = documentY - activeRainDrop.dragStartY;
 
-  if (deltaX * deltaX + deltaY * deltaY < 20) activeOrb.paused = !activeOrb.paused;
-  activeOrb.dragging = false;
-  activeOrb = null;
+  if (deltaX * deltaX + deltaY * deltaY < 20) {
+    activeRainDrop.paused = !activeRainDrop.paused;
+  }
+  activeRainDrop.dragging = false;
+  activeRainDrop = null;
   needsRender = true;
   scheduleFrame();
 });
 
 stage.addEventListener("pointercancel", () => {
-  if (!activeOrb) return;
-  activeOrb.dragging = false;
-  activeOrb = null;
+  if (!activeRainDrop) return;
+  activeRainDrop.dragging = false;
+  activeRainDrop = null;
   needsRender = true;
   scheduleFrame();
 });
@@ -652,8 +588,8 @@ stage.addEventListener("pointerleave", () => {
 });
 
 stage.addEventListener("pointermove", () => {
-  const hovered = hitTestOrbs(pointerX, pointerY);
-  stage.style.cursor = activeOrb ? "grabbing" : hovered ? "grab" : "";
+  const hovered = hitTestRainDrops(pointerX, pointerY);
+  stage.style.cursor = activeRainDrop ? "grabbing" : hovered ? "grab" : "";
 });
 
 previousChapter.addEventListener("click", () => goToChapter(currentChapterIndex - 1));

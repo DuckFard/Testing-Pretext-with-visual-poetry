@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { rolldown } from "rolldown";
+import { CHAPTERS } from "../src/story.js";
 
 const outputDirectory = new URL("../dist/", import.meta.url);
 const assetsDirectory = new URL("./assets/", outputDirectory);
@@ -19,10 +20,23 @@ await bundle.write({
 });
 await bundle.close();
 
+const escapeHtml = (value) =>
+  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const storyMarkup = CHAPTERS.map(
+  (chapter) => `
+          <section class="story-section">
+            <h3>${escapeHtml(chapter.title.replaceAll("/", ""))}</h3>
+            <div class="story-copy">
+${chapter.paragraphs.map((paragraph) => `              <p>${escapeHtml(paragraph)}</p>`).join("\n")}
+            </div>
+          </section>`,
+).join("");
+
 const sourceHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const builtHtml = sourceHtml
   .replace('href="./src/styles.css"', 'href="./assets/styles.css"')
-  .replace('src="./src/main.js"', 'src="./assets/main.js"');
+  .replace('src="./src/main.js"', 'src="./assets/main.js"')
+  .replace("<!--STORY_CONTENT-->", storyMarkup);
 
 await writeFile(new URL("./index.html", outputDirectory), builtHtml, "utf8");
 await cp(new URL("../src/styles.css", import.meta.url), new URL("./styles.css", assetsDirectory));

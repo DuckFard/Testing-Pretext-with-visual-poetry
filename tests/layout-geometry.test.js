@@ -1,9 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import * as geometry from "../src/layout-geometry.js";
 import {
-  advanceOrb,
-  advanceOrbCollection,
   carveTextLineSlots,
   circleIntervalForBand,
   getColumnCount,
@@ -69,7 +68,7 @@ test("getColumnCount follows the editorial demo breakpoints", () => {
   assert.equal(getColumnCount(1001), 3);
 });
 
-test("advanceOrb moves immutably and bounces at stage bounds", () => {
+test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
   const source = Object.freeze({
     x: 290,
     y: 100,
@@ -80,7 +79,7 @@ test("advanceOrb moves immutably and bounces at stage bounds", () => {
     dragging: false,
   });
 
-  const moved = advanceOrb(source, 1, {
+  const moved = geometry.advanceRainDrop(source, 1, {
     left: 0,
     right: 300,
     top: 0,
@@ -97,20 +96,20 @@ test("advanceOrb moves immutably and bounces at stage bounds", () => {
   assert.equal(source.x, 290);
 });
 
-test("advanceOrb keeps paused and dragged orbs fixed without mutation", () => {
+test("advanceRainDrop keeps paused and dragged drops fixed without mutation", () => {
   const bounds = { left: 0, right: 300, top: 0, bottom: 200 };
   const paused = { x: 80, y: 90, r: 20, vx: 40, vy: 10, paused: true, dragging: false };
   const dragging = { ...paused, paused: false, dragging: true };
 
-  assert.deepEqual(advanceOrb(paused, 1, bounds), paused);
-  assert.deepEqual(advanceOrb(dragging, 1, bounds), dragging);
-  assert.notEqual(advanceOrb(paused, 1, bounds), paused);
+  assert.deepEqual(geometry.advanceRainDrop(paused, 1, bounds), paused);
+  assert.deepEqual(geometry.advanceRainDrop(dragging, 1, bounds), dragging);
+  assert.notEqual(geometry.advanceRainDrop(paused, 1, bounds), paused);
 });
 
-test("advanceOrbCollection preserves the active drag reference", () => {
+test("advanceRainDropCollection preserves the active drag reference", () => {
   const active = { id: "toad", x: 80, y: 90, r: 20, vx: 40, vy: 10, paused: false, dragging: true };
   const neighbor = { id: "crab", x: 180, y: 90, r: 20, vx: 10, vy: 0, paused: false, dragging: false };
-  const result = advanceOrbCollection(
+  const result = geometry.advanceRainDropCollection(
     [active, neighbor],
     "toad",
     1,

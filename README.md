@@ -1,17 +1,17 @@
 # When Toad Called for Rain
 
-An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). The text flows around draggable, animated storm cells without DOM layout measurements. Its paper-and-ink rain field responds to the eight story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
+An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). Falling paired-stroke raindrops pass through the prose as live layout obstacles, making the text recompose without DOM layout measurements. Its paper-and-ink field responds to the eight story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
 
 ## Experience
 
 - Read the supplied 1,511-word folktale as eight animated editorial folios.
-- Drag any visible character cell and watch the surrounding text recompose.
-- Tap a cell to pause it, or hold/release all motion with the global control.
+- Drag any dark raindrop and watch the surrounding text recompose.
+- Tap a raindrop to pause it, or hold/release all motion with the global control.
 - Use the arrow keys or chapter controls to move through the story.
 - Open “Read the whole story” for a calm, linear reading edition.
 - `prefers-reduced-motion` automatically holds all autonomous movement.
 
-The source story ends with `children’s rhymes:`. This edition preserves that ending exactly and uses the final `雨` composition as its visual coda; it does not invent a missing rhyme.
+The source story ends with `children’s rhymes:`. This edition preserves that ending exactly and anchors `雨` at the bottom of the visual composition; it does not invent a missing rhyme.
 
 ## Local development
 

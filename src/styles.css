@@ -27,7 +27,9 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    linear-gradient(90deg, rgba(22, 25, 26, 0.018) 1px, transparent 1px) 0 0 / 32px 32px,
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.52), transparent 32%),
+    radial-gradient(circle at 82% 72%, rgba(138, 106, 63, 0.035), transparent 34%),
+    repeating-linear-gradient(83deg, rgba(22, 25, 26, 0.012) 0 1px, transparent 1px 34px),
     var(--paper);
   font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
 }
@@ -154,124 +156,107 @@ a:focus-visible {
   pointer-events: none;
 }
 
-.edition-kicker {
+.title-composition {
   position: absolute;
-  z-index: 4;
-  top: 78px;
-  left: 48px;
-  right: 48px;
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rule);
+  z-index: 3;
+  top: var(--title-top, 104px);
+  left: var(--title-left, 5.5vw);
+  width: var(--title-width, 37vw);
+}
+
+.movement-kicker {
+  display: block;
+  margin-bottom: 20px;
   color: var(--ink-soft);
   font: 700 10px/1 Arial, Helvetica, sans-serif;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
-.headline-line,
-.body-line,
-.pullquote-line {
+.display-title {
+  margin: 0;
+  color: var(--ink);
+  font: 400 clamp(72px, 7.4vw, 132px)/0.73 "Bodoni 72", Didot, "Iowan Old Style", Georgia, serif;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+}
+
+.display-title span {
+  display: block;
+  white-space: nowrap;
+}
+
+.title-rule {
+  display: block;
+  width: clamp(92px, 8vw, 138px);
+  height: 6px;
+  margin-top: 38px;
+  background: var(--plum);
+}
+
+.body-line {
   position: absolute;
   z-index: 2;
   pointer-events: none;
   white-space: pre;
 }
 
-.headline-line {
-  color: var(--ink);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-}
-
 .body-line {
   color: rgba(22, 25, 26, 0.91);
 }
 
-.pullquote-line {
+.rain-drop {
+  position: absolute;
   z-index: 4;
-  color: var(--plum);
-  font-style: italic;
-}
-
-.pullquote-rule {
-  position: absolute;
-  z-index: 3;
-  display: none;
-  width: 2px;
-  background: var(--plum);
-}
-
-.rain-cell {
-  position: absolute;
-  z-index: 8;
   display: grid;
   place-content: center;
-  border: 1px solid rgba(22, 25, 26, 0.16);
-  border-radius: 50%;
   color: var(--ink);
   text-align: center;
-  box-shadow:
-    0 0 0 14px color-mix(in srgb, var(--cell-color) 8%, transparent),
-    0 0 56px 22px color-mix(in srgb, var(--cell-color) 12%, transparent);
-  background:
-    radial-gradient(circle at 38% 35%, rgba(255, 255, 255, 0.66), transparent 28%),
-    radial-gradient(circle, color-mix(in srgb, var(--cell-color) 26%, transparent), transparent 68%);
+  filter: drop-shadow(0 0 9px var(--paper));
+  cursor: grab;
   will-change: transform;
 }
 
-.rain-cell::before,
-.rain-cell::after {
+.rain-drop::before,
+.rain-drop::after {
   content: "";
   position: absolute;
-  top: 24%;
-  width: 1px;
-  height: 52%;
-  background: color-mix(in srgb, var(--cell-color) 64%, var(--ink));
-  transform: rotate(-18deg);
-  opacity: 0.42;
+  left: 39%;
+  width: 2px;
+  height: 10px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 8px 5px 0 currentColor;
+  transform: rotate(-32deg);
+  opacity: 0.9;
 }
 
-.rain-cell::before {
-  left: 42%;
+.rain-drop::before {
+  top: 28%;
 }
 
-.rain-cell::after {
-  right: 42%;
+.rain-drop::after {
+  top: 51%;
 }
 
-.rain-cell.paused {
-  opacity: 0.48;
-  filter: grayscale(0.8);
+.rain-drop[data-tone="plum"] {
+  color: var(--plum);
 }
 
-.cell-name {
-  position: relative;
-  z-index: 1;
-  font: 800 9px/1 Arial, Helvetica, sans-serif;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.rain-drop.paused {
+  opacity: 0.36;
 }
 
-.kanji-coda {
+.rain-kanji-anchor {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   right: 0;
-  bottom: 88px;
+  bottom: max(94px, calc(100% - 100svh + 94px));
   left: 0;
-  color: var(--ink);
+  color: var(--plum);
   text-align: center;
-  font: 400 clamp(56px, 7vw, 110px)/1 "Yu Mincho", "Hiragino Mincho ProN", serif;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 600ms ease, transform 600ms ease;
-}
-
-.kanji-coda.visible {
-  opacity: 0.88;
-  transform: translateY(0);
+  font: 400 clamp(40px, 3vw, 58px)/1 "Yu Mincho", "Hiragino Mincho ProN", serif;
+  opacity: 0.92;
 }
 
 .interaction-hint {
@@ -399,12 +384,17 @@ a:focus-visible {
 }
 
 .story-article {
+  position: relative;
+  z-index: 1;
+  padding: 42px clamp(24px, 8vw, 140px) 100px;
+  background: var(--paper-bright);
+}
+
+.js .story-article {
   position: fixed;
   z-index: 200;
   inset: 0;
   overflow-y: auto;
-  padding: 42px clamp(24px, 8vw, 140px) 100px;
-  background: var(--paper-bright);
   visibility: hidden;
   opacity: 0;
   transform: translateY(24px);
@@ -416,7 +406,7 @@ a:focus-visible {
   overflow: hidden;
 }
 
-.reading-open .story-article {
+.js .reading-open .story-article {
   visibility: visible;
   opacity: 1;
   transform: translateY(0);
@@ -539,15 +529,30 @@ a:focus-visible {
     display: none;
   }
 
-  .edition-kicker {
-    top: 72px;
-    right: 20px;
-    left: 20px;
+  .title-composition {
+    top: var(--title-top, 88px);
+    left: var(--title-left, 20px);
+    width: var(--title-width, calc(100vw - 40px));
   }
 
-  .edition-kicker span:last-child,
+  .display-title {
+    font-size: clamp(58px, 18vw, 92px);
+    line-height: 0.75;
+  }
+
+  .title-rule {
+    height: 4px;
+    margin-top: 28px;
+  }
+
   .interaction-hint {
     display: none;
+  }
+
+  .rain-drop::before,
+  .rain-drop::after {
+    height: 8px;
+    box-shadow: 7px 4px 0 currentColor;
   }
 
   .chapter-nav {

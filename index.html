@@ -13,7 +13,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <meta property="og:title" content="When Toad Called for Rain" />
-    <meta property="og:description" content="Drag the storm cells. Watch the story flow. Call down the rain." />
+    <meta property="og:description" content="Watch falling rain pass through a story composed live with Pretext." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="./og.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -25,7 +25,7 @@
 
     <header class="masthead">
       <a class="wordmark" href="#experience" aria-label="When Toad Called for Rain, home">
-        <span class="wordmark-mark">雨</span>
+        <span class="wordmark-mark" aria-hidden="true">〃</span>
         <span>When Toad Called for Rain</span>
       </a>
       <p class="masthead-note">A typographic folktale in eight movements</p>
@@ -39,18 +39,21 @@
       <section class="visual-edition" aria-label="Interactive visual edition">
         <div id="stage" aria-hidden="true">
           <canvas id="rainField"></canvas>
-          <div class="edition-kicker">
-            <span id="chapterEyebrow">I · Earth</span>
-            <span>Story provided for this adaptation</span>
+          <div class="title-composition">
+            <span id="chapterEyebrow" class="movement-kicker">I · Earth</span>
+            <p class="display-title">
+              <span>When</span>
+              <span>Toad</span>
+              <span>Called</span>
+              <span>For Rain</span>
+            </p>
+            <span class="title-rule"></span>
           </div>
-          <div id="headlineLayer"></div>
-          <div id="pullquoteRule" class="pullquote-rule"></div>
-          <div id="pullquoteLayer"></div>
           <div id="bodyLayer"></div>
-          <div id="kanjiCoda" class="kanji-coda"></div>
+          <div id="rainKanjiAnchor" class="rain-kanji-anchor">雨</div>
         </div>
 
-        <p class="interaction-hint">Drag a storm cell · Tap it to hold · Arrow keys turn the folio</p>
+        <p class="interaction-hint">Rain moves through the story · Space holds the field · Arrow keys turn the folio</p>
 
         <nav class="chapter-nav" aria-label="Story chapters">
           <button id="previousChapter" class="nav-button" type="button" aria-label="Previous chapter">
@@ -71,8 +74,6 @@
       <article
         id="fullStory"
         class="story-article"
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="readingTitle"
       >
         <header class="reading-header">
@@ -82,7 +83,7 @@
           </div>
           <button id="closeReadingMode" class="close-button" type="button">Return to the rain</button>
         </header>
-        <div id="storyBody" class="story-body"></div>
+        <div id="storyBody" class="story-body"><!--STORY_CONTENT--></div>
         <footer class="story-credits">
           <p>The supplied folktale ends at “children’s rhymes:” and is preserved here without an invented ending.</p>
           <p>
