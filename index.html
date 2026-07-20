@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="An interactive typographic telling of the toad who challenged Heaven for rain, built with Pretext and inspired by Seiichi Niikuni’s Rain."
+    />
+    <meta name="theme-color" content="#f4f1e9" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta property="og:title" content="When Toad Called for Rain" />
+    <meta property="og:description" content="Drag the storm cells. Watch the story flow. Call down the rain." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>When Toad Called for Rain</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <a id="skipToStory" class="skip-link" href="#fullStory">Skip to the complete story</a>
+
+    <header class="masthead">
+      <a class="wordmark" href="#experience" aria-label="When Toad Called for Rain, home">
+        <span class="wordmark-mark">雨</span>
+        <span>When Toad Called for Rain</span>
+      </a>
+      <p class="masthead-note">A typographic folktale in eight movements</p>
+      <button id="readingMode" class="text-button" type="button" aria-expanded="false">
+        Read the whole story
+      </button>
+    </header>
+
+    <main id="experience">
+      <h1 class="visually-hidden">When Toad Called for Rain</h1>
+      <section class="visual-edition" aria-label="Interactive visual edition">
+        <div id="stage" aria-hidden="true">
+          <canvas id="rainField"></canvas>
+          <div class="edition-kicker">
+            <span id="chapterEyebrow">I · Earth</span>
+            <span>Story provided for this adaptation</span>
+          </div>
+          <div id="headlineLayer"></div>
+          <div id="pullquoteRule" class="pullquote-rule"></div>
+          <div id="pullquoteLayer"></div>
+          <div id="bodyLayer"></div>
+          <div id="kanjiCoda" class="kanji-coda"></div>
+        </div>
+
+        <p class="interaction-hint">Drag a storm cell · Tap it to hold · Arrow keys turn the folio</p>
+
+        <nav class="chapter-nav" aria-label="Story chapters">
+          <button id="previousChapter" class="nav-button" type="button" aria-label="Previous chapter">
+            <span aria-hidden="true">←</span>
+            <span>Previous</span>
+          </button>
+          <div class="chapter-position" aria-live="polite">
+            <span id="chapterLabel">Chapter 1 of 8</span>
+            <span id="chapterTitle">The drought without end</span>
+          </div>
+          <button id="nextChapter" class="nav-button" type="button" aria-label="Next chapter">
+            <span>Next</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </nav>
+      </section>
+
+      <article
+        id="fullStory"
+        class="story-article"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="readingTitle"
+      >
+        <header class="reading-header">
+          <div>
+            <p class="reading-kicker">Linear reading edition</p>
+            <h2 id="readingTitle">The Toad Who Called Down Rain</h2>
+          </div>
+          <button id="closeReadingMode" class="close-button" type="button">Return to the rain</button>
+        </header>
+        <div id="storyBody" class="story-body"></div>
+        <footer class="story-credits">
+          <p>The supplied folktale ends at “children’s rhymes:” and is preserved here without an invented ending.</p>
+          <p>
+            Visual language inspired by Seiichi Niikuni’s concrete poem <cite>Rain</cite> (1966).
+            Text layout powered by
+            <a href="https://github.com/chenglou/pretext" target="_blank" rel="noreferrer">Pretext</a>.
+          </p>
+        </footer>
+      </article>
+    </main>
+
+    <div class="motion-control">
+      <button id="pauseMotion" type="button" aria-pressed="false">
+        <span class="motion-symbol" aria-hidden="true">Ⅱ</span>
+        <span id="motionLabel">Hold the rain</span>
+      </button>
+    </div>
+
+    <footer class="stats-bar" aria-hidden="true">
+      <div><span>Lines</span><strong id="statLines">0</strong></div>
+      <div><span>Reflow</span><strong id="statReflow">0.0ms</strong></div>
+      <div><span>DOM reads</span><strong>0</strong></div>
+      <div><span>FPS</span><strong id="statFps">—</strong></div>
+      <div><span>Columns</span><strong id="statColumns">0</strong></div>
+    </footer>
+
+    <noscript>
+      <div class="noscript-note">This edition needs JavaScript to compose the supplied story with Pretext.</div>
+    </noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
