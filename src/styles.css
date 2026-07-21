@@ -207,12 +207,12 @@ a:focus-visible {
 
 .rain-drop {
   position: absolute;
-  z-index: 1;
+  z-index: 4;
   display: grid;
   place-content: center;
   color: var(--ink);
   text-align: center;
-  filter: drop-shadow(0 0 1px var(--paper));
+  filter: drop-shadow(0 0 2px var(--paper));
   cursor: grab;
   will-change: transform;
   opacity: 0.87;
@@ -220,8 +220,8 @@ a:focus-visible {
 
 .rain-stroke-mark {
   display: block;
-  width: 16px;
-  height: 12px;
+  width: 22px;
+  height: 16px;
   overflow: visible;
   fill: currentColor;
   transform: rotate(var(--mark-rotation, 0deg)) scale(var(--mark-scale, 1));
