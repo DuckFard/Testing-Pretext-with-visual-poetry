@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import * as geometry from "../src/layout-geometry.js";
 import {
   carveTextLineSlots,
-  circleIntervalForBand,
   getColumnCount,
 } from "../src/layout-geometry.js";
 
@@ -49,16 +48,23 @@ test("carveTextLineSlots returns no slots when the band is fully covered", () =>
   );
 });
 
-test("circleIntervalForBand returns null outside and at a tangent", () => {
-  assert.equal(circleIntervalForBand(100, 100, 30, 0, 60, 0, 0), null);
-  assert.equal(circleIntervalForBand(100, 100, 30, 130, 150, 0, 0), null);
-});
-
-test("circleIntervalForBand returns a symmetric padded center interval", () => {
-  assert.deepEqual(circleIntervalForBand(100, 100, 30, 90, 110, 8, 2), {
-    left: 62,
-    right: 138,
-  });
+test("rain blockers keep only a four-pixel text halo", () => {
+  assert.deepEqual(
+    geometry.rainDropIntervalForBand(
+      { x: 100, y: 100, width: 38, height: 24 },
+      90,
+      110,
+    ),
+    { left: 77, right: 123 },
+  );
+  assert.equal(
+    geometry.rainDropIntervalForBand(
+      { x: 100, y: 100, width: 38, height: 24 },
+      120,
+      140,
+    ),
+    null,
+  );
 });
 
 test("getColumnCount follows the editorial demo breakpoints", () => {
@@ -72,7 +78,8 @@ test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
   const source = Object.freeze({
     x: 290,
     y: 100,
-    r: 20,
+    width: 40,
+    height: 24,
     vx: 40,
     vy: -10,
     paused: false,
@@ -98,7 +105,7 @@ test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
 
 test("advanceRainDrop keeps paused and dragged drops fixed without mutation", () => {
   const bounds = { left: 0, right: 300, top: 0, bottom: 200 };
-  const paused = { x: 80, y: 90, r: 20, vx: 40, vy: 10, paused: true, dragging: false };
+  const paused = { x: 80, y: 90, width: 40, height: 24, vx: 40, vy: 10, paused: true, dragging: false };
   const dragging = { ...paused, paused: false, dragging: true };
 
   assert.deepEqual(geometry.advanceRainDrop(paused, 1, bounds), paused);
@@ -107,11 +114,11 @@ test("advanceRainDrop keeps paused and dragged drops fixed without mutation", ()
 });
 
 test("advanceRainDropCollection preserves the active drag reference", () => {
-  const active = { id: "toad", x: 80, y: 90, r: 20, vx: 40, vy: 10, paused: false, dragging: true };
-  const neighbor = { id: "crab", x: 180, y: 90, r: 20, vx: 10, vy: 0, paused: false, dragging: false };
+  const active = { id: "drop-1", x: 80, y: 90, width: 40, height: 24, vx: 40, vy: 10, paused: false, dragging: true };
+  const neighbor = { id: "drop-2", x: 180, y: 90, width: 40, height: 24, vx: 10, vy: 0, paused: false, dragging: false };
   const result = geometry.advanceRainDropCollection(
     [active, neighbor],
-    "toad",
+    "drop-1",
     1,
     { left: 0, right: 300, top: 0, bottom: 200 },
   );

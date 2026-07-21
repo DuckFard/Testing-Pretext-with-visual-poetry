@@ -15,6 +15,8 @@ test("the GitHub Pages artifact contains the finished editorial experience", asy
   assert.match(html, /<article[^>]+id="fullStory"/);
   assert.match(html, /aria-hidden="true"[^>]+id="stage"|id="stage"[^>]+aria-hidden="true"/);
   assert.match(html, /id="pauseMotion"[^>]+aria-pressed="false"/);
+  assert.match(html, /Movement 1 of 2/);
+  assert.doesNotMatch(html, /(?:three|eight) movements|Previous chapter|Next chapter/i);
   assert.match(html, /Content-Security-Policy/);
   assert.match(html, /id="skipToStory"/);
   assert.doesNotMatch(html, /<article[^>]+role="dialog"/);

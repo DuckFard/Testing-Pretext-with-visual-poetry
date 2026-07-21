@@ -1,13 +1,13 @@
 # When Toad Called for Rain
 
-An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). Falling paired-stroke raindrops pass through the prose as live layout obstacles, making the text recompose without DOM layout measurements. Its paper-and-ink field responds to the eight story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
+An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). Falling `ノノ` rain marks pass through the prose as live layout obstacles, making the text recompose without DOM layout measurements. Its paper-and-ink field responds to two full-page story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
 
 ## Experience
 
-- Read the supplied 1,511-word folktale as eight animated editorial folios.
+- Read the supplied 1,511-word folktale as two dense animated editorial folios.
 - Drag any dark raindrop and watch the surrounding text recompose.
 - Tap a raindrop to pause it, or hold/release all motion with the global control.
-- Use the arrow keys or chapter controls to move through the story.
+- Use the arrow keys or movement controls to move through the story.
 - Open “Read the whole story” for a calm, linear reading edition.
 - `prefers-reduced-motion` automatically holds all autonomous movement.
 
@@ -30,7 +30,7 @@ The unit suite enforces at least 80% line, branch, and function coverage for the
 
 ## Technical notes
 
-The visual engine is adapted from the interaction model of [The Editorial Engine](https://somnai-dreams.github.io/pretext-demos/the-editorial-engine.html): Pretext prepares and measures the story once, then `layoutNextLine` streams it through responsive columns and around circle-band intersections. The animation loop performs explicit DOM writes only; it never calls `getBoundingClientRect`, `offsetWidth`, or `offsetHeight`.
+The visual engine is adapted from the interaction model of [The Editorial Engine](https://somnai-dreams.github.io/pretext-demos/the-editorial-engine.html): Pretext prepares and measures the story once, then `layoutNextLine` streams it through responsive columns and around narrow glyph-sized rectangles. The animation loop performs explicit DOM writes only; it never calls `getBoundingClientRect`, `offsetWidth`, or `offsetHeight`.
 
 The animated layer is hidden from assistive technology. The same canonical story data powers a semantic article in the linear reading edition.
 

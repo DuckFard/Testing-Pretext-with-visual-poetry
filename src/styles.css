@@ -215,28 +215,10 @@ a:focus-visible {
   filter: drop-shadow(0 0 9px var(--paper));
   cursor: grab;
   will-change: transform;
-}
-
-.rain-drop::before,
-.rain-drop::after {
-  content: "";
-  position: absolute;
-  left: 39%;
-  width: 2px;
-  height: 10px;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 8px 5px 0 currentColor;
-  transform: rotate(-32deg);
-  opacity: 0.9;
-}
-
-.rain-drop::before {
-  top: 28%;
-}
-
-.rain-drop::after {
-  top: 51%;
+  font: 500 23px/1 "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  letter-spacing: -0.2em;
+  text-indent: -0.2em;
+  opacity: 0.92;
 }
 
 .rain-drop[data-tone="plum"] {
@@ -547,12 +529,6 @@ a:focus-visible {
 
   .interaction-hint {
     display: none;
-  }
-
-  .rain-drop::before,
-  .rain-drop::after {
-    height: 8px;
-    box-shadow: 7px 4px 0 currentColor;
   }
 
   .chapter-nav {

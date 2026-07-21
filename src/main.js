@@ -3,8 +3,8 @@ import { layoutNextLine, prepareWithSegments } from "@chenglou/pretext";
 import {
   advanceRainDropCollection,
   carveTextLineSlots,
-  circleIntervalForBand,
   getColumnCount,
+  rainDropIntervalForBand,
 } from "./layout-geometry.js";
 import { CHAPTERS, STORY_PARAGRAPHS, getChapterIndex } from "./story.js";
 
@@ -66,20 +66,21 @@ const frameTimes = [];
 const bodyLinePool = [];
 
 const rainDropDefinitions = [
-  { id: "drop-01", fx: 0.48, fy: 0.23, r: 27, vx: 7, vy: 25, tone: "ink" },
-  { id: "drop-02", fx: 0.62, fy: 0.36, r: 24, vx: -5, vy: 31, tone: "plum" },
-  { id: "drop-03", fx: 0.78, fy: 0.18, r: 30, vx: 4, vy: 22, tone: "ink" },
-  { id: "drop-04", fx: 0.9, fy: 0.49, r: 25, vx: -7, vy: 28, tone: "ink" },
-  { id: "drop-05", fx: 0.16, fy: 0.7, r: 26, vx: 5, vy: 24, tone: "plum" },
-  { id: "drop-06", fx: 0.34, fy: 0.82, r: 23, vx: -4, vy: 29, tone: "ink" },
-  { id: "drop-07", fx: 0.54, fy: 0.68, r: 29, vx: 6, vy: 21, tone: "ink" },
-  { id: "drop-08", fx: 0.73, fy: 0.84, r: 24, vx: -5, vy: 27, tone: "plum" },
-  { id: "drop-09", fx: 0.89, fy: 0.73, r: 28, vx: 4, vy: 23, tone: "ink" },
+  { id: "drop-01", fx: 0.48, fy: 0.23, width: 38, height: 24, vx: 7, vy: 25, tone: "ink" },
+  { id: "drop-02", fx: 0.62, fy: 0.36, width: 40, height: 24, vx: -5, vy: 31, tone: "plum" },
+  { id: "drop-03", fx: 0.78, fy: 0.18, width: 39, height: 25, vx: 4, vy: 22, tone: "ink" },
+  { id: "drop-04", fx: 0.9, fy: 0.49, width: 38, height: 24, vx: -7, vy: 28, tone: "ink" },
+  { id: "drop-05", fx: 0.16, fy: 0.7, width: 40, height: 25, vx: 5, vy: 24, tone: "plum" },
+  { id: "drop-06", fx: 0.34, fy: 0.82, width: 37, height: 24, vx: -4, vy: 29, tone: "ink" },
+  { id: "drop-07", fx: 0.54, fy: 0.68, width: 41, height: 25, vx: 6, vy: 21, tone: "ink" },
+  { id: "drop-08", fx: 0.73, fy: 0.84, width: 38, height: 24, vx: -5, vy: 27, tone: "plum" },
+  { id: "drop-09", fx: 0.89, fy: 0.73, width: 40, height: 25, vx: 4, vy: 23, tone: "ink" },
 ];
 
 let rainDrops = rainDropDefinitions.map((definition) => {
   const element = document.createElement("div");
   element.className = "rain-drop";
+  element.textContent = "ノノ";
   element.dataset.tone = definition.tone;
   stage.appendChild(element);
 
@@ -205,17 +206,7 @@ function layoutRegion(prepared, startCursor, region, blockers, rectangleBlockers
   while (lineTop + BODY_LINE_HEIGHT <= region.y + region.height && !exhausted) {
     const bandBottom = lineTop + BODY_LINE_HEIGHT;
     const blockedIntervals = blockers
-      .map((rainDrop) =>
-        circleIntervalForBand(
-          rainDrop.x,
-          rainDrop.y,
-          rainDrop.r,
-          lineTop,
-          bandBottom,
-          14,
-          5,
-        ),
-      )
+      .map((rainDrop) => rainDropIntervalForBand(rainDrop, lineTop, bandBottom))
       .filter(Boolean);
     const rectangleIntervals = rectangleBlockers
       .filter(
@@ -303,7 +294,10 @@ function renderEditorialLayout() {
 
   stageHeight = Math.max(viewport.height, finalBottom + 190);
   textTop = Math.min(...metrics.initialRegions.map((region) => region.y));
-  textBottom = Math.max(...metrics.initialRegions.map((region) => region.y + region.height));
+  textBottom = Math.max(
+    stageHeight - 190,
+    ...metrics.initialRegions.map((region) => region.y + region.height),
+  );
   stage.style.height = `${stageHeight}px`;
   resizeRainCanvas();
 
@@ -332,10 +326,10 @@ function renderEditorialLayout() {
 
 function renderRainDrops() {
   rainDrops.forEach((rainDrop) => {
-    rainDrop.element.style.left = `${rainDrop.x - rainDrop.r}px`;
-    rainDrop.element.style.top = `${rainDrop.y - rainDrop.r}px`;
-    rainDrop.element.style.width = `${rainDrop.r * 2}px`;
-    rainDrop.element.style.height = `${rainDrop.r * 2}px`;
+    rainDrop.element.style.left = `${rainDrop.x - rainDrop.width / 2}px`;
+    rainDrop.element.style.top = `${rainDrop.y - rainDrop.height / 2}px`;
+    rainDrop.element.style.width = `${rainDrop.width}px`;
+    rainDrop.element.style.height = `${rainDrop.height}px`;
     rainDrop.element.classList.toggle("paused", rainDrop.paused);
   });
 }
@@ -386,9 +380,12 @@ function drawRain(now, density, titleBottom) {
 function hitTestRainDrops(x, y) {
   for (let index = rainDrops.length - 1; index >= 0; index -= 1) {
     const rainDrop = rainDrops[index];
-    const deltaX = x - rainDrop.x;
-    const deltaY = y - rainDrop.y;
-    if (deltaX * deltaX + deltaY * deltaY <= rainDrop.r * rainDrop.r) return rainDrop;
+    const hitHalfWidth = Math.max(22, rainDrop.width / 2);
+    const hitHalfHeight = Math.max(22, rainDrop.height / 2);
+    if (
+      Math.abs(x - rainDrop.x) <= hitHalfWidth &&
+      Math.abs(y - rainDrop.y) <= hitHalfHeight
+    ) return rainDrop;
   }
   return null;
 }
@@ -408,7 +405,7 @@ function updateRainDrops(deltaSeconds) {
     bounds,
   ).map((rainDrop) => {
     if (rainDrop.dragging || rainDrop.paused || rainDrop.vy >= 0) return rainDrop;
-    return { ...rainDrop, y: bounds.top + rainDrop.r, vy: Math.abs(rainDrop.vy) };
+    return { ...rainDrop, y: bounds.top + rainDrop.height / 2, vy: Math.abs(rainDrop.vy) };
   });
 }
 
@@ -442,7 +439,7 @@ function prepareChapter(index) {
   const chapter = CHAPTERS[currentChapterIndex];
   currentPreparedBody = prepareWithSegments(chapter.paragraphs.join("\n\n"), BODY_FONT);
   chapterEyebrow.textContent = chapter.eyebrow;
-  chapterLabel.textContent = `Chapter ${currentChapterIndex + 1} of ${CHAPTERS.length}`;
+  chapterLabel.textContent = `Movement ${currentChapterIndex + 1} of ${CHAPTERS.length}`;
   chapterTitle.textContent = chapter.title.replaceAll("/", "").toLowerCase();
   previousChapter.disabled = currentChapterIndex === 0;
   nextChapter.disabled = currentChapterIndex === CHAPTERS.length - 1;
@@ -525,8 +522,14 @@ function updateViewport() {
 
   rainDrops = rainDrops.map((rainDrop) => ({
     ...rainDrop,
-    x: Math.max(rainDrop.r + 8, Math.min(viewport.width - rainDrop.r - 8, rainDrop.x)),
-    y: Math.max(top + rainDrop.r, Math.min(bottom - rainDrop.r, rainDrop.y)),
+    x: Math.max(
+      rainDrop.width / 2 + 8,
+      Math.min(viewport.width - rainDrop.width / 2 - 8, rainDrop.x),
+    ),
+    y: Math.max(
+      top + rainDrop.height / 2,
+      Math.min(bottom - rainDrop.height / 2, rainDrop.y),
+    ),
   }));
   needsRender = true;
   scheduleFrame();

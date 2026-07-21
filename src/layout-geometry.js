@@ -23,34 +23,23 @@ export function carveTextLineSlots(base, blocked, minWidth = MIN_SLOT_WIDTH) {
   return carved.filter((slot) => slot.right - slot.left >= minWidth);
 }
 
-export function circleIntervalForBand(
-  cx,
-  cy,
-  radius,
+export function rainDropIntervalForBand(
+  rainDrop,
   bandTop,
   bandBottom,
-  horizontalPadding = 0,
-  verticalPadding = 0,
+  horizontalPadding = 4,
+  verticalPadding = 1,
 ) {
-  const top = bandTop - verticalPadding;
-  const bottom = bandBottom + verticalPadding;
+  const halfWidth = rainDrop.width / 2;
+  const halfHeight = rainDrop.height / 2;
+  const top = rainDrop.y - halfHeight - verticalPadding;
+  const bottom = rainDrop.y + halfHeight + verticalPadding;
 
-  if (top >= cy + radius || bottom <= cy - radius) {
-    return null;
-  }
-
-  const minimumDeltaY =
-    cy >= top && cy <= bottom ? 0 : cy < top ? top - cy : cy - bottom;
-
-  if (minimumDeltaY >= radius) {
-    return null;
-  }
-
-  const maximumDeltaX = Math.sqrt(radius * radius - minimumDeltaY * minimumDeltaY);
+  if (bandTop >= bottom || bandBottom <= top) return null;
 
   return {
-    left: cx - maximumDeltaX - horizontalPadding,
-    right: cx + maximumDeltaX + horizontalPadding,
+    left: rainDrop.x - halfWidth - horizontalPadding,
+    right: rainDrop.x + halfWidth + horizontalPadding,
   };
 }
 
@@ -69,20 +58,22 @@ export function advanceRainDrop(rainDrop, deltaSeconds, bounds) {
   let y = rainDrop.y + rainDrop.vy * deltaSeconds;
   let vx = rainDrop.vx;
   let vy = rainDrop.vy;
+  const halfWidth = rainDrop.width / 2;
+  const halfHeight = rainDrop.height / 2;
 
-  if (x - rainDrop.r < bounds.left) {
-    x = bounds.left + rainDrop.r;
+  if (x - halfWidth < bounds.left) {
+    x = bounds.left + halfWidth;
     vx = Math.abs(vx);
-  } else if (x + rainDrop.r > bounds.right) {
-    x = bounds.right - rainDrop.r;
+  } else if (x + halfWidth > bounds.right) {
+    x = bounds.right - halfWidth;
     vx = -Math.abs(vx);
   }
 
-  if (y - rainDrop.r < bounds.top) {
-    y = bounds.top + rainDrop.r;
+  if (y - halfHeight < bounds.top) {
+    y = bounds.top + halfHeight;
     vy = Math.abs(vy);
-  } else if (y + rainDrop.r > bounds.bottom) {
-    y = bounds.bottom - rainDrop.r;
+  } else if (y + halfHeight > bounds.bottom) {
+    y = bounds.bottom - halfHeight;
     vy = -Math.abs(vy);
   }
 

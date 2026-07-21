@@ -37,14 +37,8 @@ const chapter = (title, eyebrow, paragraphIndexes, companions, rainLevel, pullqu
   });
 
 export const CHAPTERS = Object.freeze([
-  chapter("THE DROUGHT / WITHOUT END", "I · Earth", [0, 1], ["toad"], 0.06, "There was not a drop in the world to drink."),
-  chapter("A SIDEWAYS / COMPANION", "II · The road", [2, 3, 4, 5], ["toad", "crab"], 0.12, "And Toad had his first companion."),
-  chapter("SIX AGAINST / HEAVEN", "III · The company", [6, 7, 8, 9], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 0.22, "Each strike reverberating like thunder."),
-  chapter("TEETH / CLAWS / THUNDER", "IV · Heaven’s Gate", [10, 11, 12], ["toad", "tiger", "bear", "fox"], 0.32, "Toad sounded the drum again."),
-  chapter("THE STING / AND PINCERS", "V · The contest", [13, 14, 15], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 0.48, "As one, the companions rallied together, ready to fight."),
-  chapter("HEAVEN / MUST LISTEN", "VI · The throne", [16, 17, 18, 19], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 0.62, "Four long years have we suffered from drought."),
-  chapter("A PROMISE / OF RAIN", "VII · The bargain", [20, 21, 22], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 0.82, "All you need do, Toad, is grind your teeth."),
-  chapter("AND THE TEXT / BECAME RAIN", "VIII · The return", [23], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 1, "Whenever Toad ground his teeth, Heaven would send pouring rain.", "雨"),
+  chapter("THE EARTH / CLIMBS TO HEAVEN", "I · The ascent", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], ["toad"], 0.18, "There was not a drop in the world to drink."),
+  chapter("AND HEAVEN / SENT RAIN", "II · The reckoning", [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], ["toad", "crab", "tiger", "bear", "wasp", "fox"], 1, "Whenever Toad ground his teeth, Heaven would send pouring rain.", "雨"),
 ]);
 
 export function getChapterIndex(index, length = CHAPTERS.length) {

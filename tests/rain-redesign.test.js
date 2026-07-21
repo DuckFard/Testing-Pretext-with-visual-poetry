@@ -41,7 +41,21 @@ test("the interactive source creates rain drops rather than named animal cells",
 
   assert.match(source, /\brainDrops?\b/);
   assert.match(source, /className\s*=\s*["']rain-drop["']/);
+  assert.match(source, /element\.textContent\s*=\s*["']ノノ["']/);
+  assert.match(source, /rainDropIntervalForBand\(/);
+  assert.doesNotMatch(source, /circleIntervalForBand\(/);
   assert.match(styles, /\.rain-drop\b/);
+  assert.doesNotMatch(styles, /\.rain-drop::(?:before|after)/);
+});
+
+test("the ノノ blockers hug the letterforms closely", async () => {
+  const source = await read("src/main.js");
+  const widths = [...source.matchAll(/id:\s*["']drop-\d+["'][^}]*\bwidth:\s*(\d+)/g)].map(
+    (match) => Number(match[1]),
+  );
+
+  assert.ok(widths.length >= 8, "expected a field of interactive ノノ drops");
+  assert.ok(widths.every((width) => width <= 42), "expected compact rain blockers");
 });
 
 test("the composition owns a permanent bottom rain-kanji anchor", async () => {

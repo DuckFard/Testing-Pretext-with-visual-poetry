@@ -18,8 +18,12 @@ test("the supplied story remains complete and in order", () => {
   );
 });
 
-test("chapters expose every companion and finish in rain", () => {
-  assert.ok(CHAPTERS.length >= 8);
+test("two full-page movements carry the complete story into rain", () => {
+  assert.equal(CHAPTERS.length, 2);
+  assert.deepEqual(
+    CHAPTERS.map((chapter) => chapter.paragraphs.length),
+    [12, 12],
+  );
   assert.deepEqual(CHAPTERS[0].companions, ["toad"]);
   assert.ok(CHAPTERS.some((chapter) => chapter.companions.includes("crab")));
   assert.ok(CHAPTERS.some((chapter) => chapter.companions.includes("tiger")));
