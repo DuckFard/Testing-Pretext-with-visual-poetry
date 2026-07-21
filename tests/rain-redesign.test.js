@@ -41,21 +41,41 @@ test("the interactive source creates rain drops rather than named animal cells",
 
   assert.match(source, /\brainDrops?\b/);
   assert.match(source, /className\s*=\s*["']rain-drop["']/);
-  assert.match(source, /element\.textContent\s*=\s*["']ノノ["']/);
+  assert.doesNotMatch(source, /ノノ/);
+  assert.match(source, /createElementNS\([^)]*["']svg["']/);
+  assert.match(source, /classList\.add\(["']rain-stroke-mark["']\)/);
+  assert.match(source, /RAIN_STROKE_PATHS/);
   assert.match(source, /rainDropIntervalForBand\(/);
   assert.doesNotMatch(source, /circleIntervalForBand\(/);
   assert.match(styles, /\.rain-drop\b/);
+  assert.match(styles, /\.rain-stroke-mark\b/);
+  assert.match(styles, /fill:\s*currentColor/);
   assert.doesNotMatch(styles, /\.rain-drop::(?:before|after)/);
 });
 
-test("the ノノ blockers hug the letterforms closely", async () => {
+test("the custom ink marks hug the text closely", async () => {
   const source = await read("src/main.js");
-  const widths = [...source.matchAll(/id:\s*["']drop-\d+["'][^}]*\bwidth:\s*(\d+)/g)].map(
-    (match) => Number(match[1]),
-  );
+  const dimensions = [...source.matchAll(
+    /id:\s*["']drop-\d+["'][^}]*\bwidth:\s*(\d+)[^}]*\bheight:\s*(\d+)/g,
+  )].map(([, width, height]) => ({ width: Number(width), height: Number(height) }));
 
-  assert.ok(widths.length >= 8, "expected a field of interactive ノノ drops");
-  assert.ok(widths.every((width) => width <= 42), "expected compact rain blockers");
+  assert.ok(dimensions.length >= 8, "expected a field of interactive rain marks");
+  assert.ok(dimensions.every(({ width }) => width <= 26), "expected narrow rain blockers");
+  assert.ok(dimensions.every(({ height }) => height <= 16), "expected short rain blockers");
+});
+
+test("keyboard shortcuts preserve native activation for interactive controls", async () => {
+  const source = await read("src/main.js");
+
+  assert.match(source, /event\.target\.closest\([^)]+button[^)]+a\[href\][^)]+\)/s);
+  assert.match(source, /if \(event\.key === ["'] ["'] && !isInteractiveTarget\)/);
+});
+
+test("the animated canvas reuses frozen stroke offsets", async () => {
+  const source = await read("src/main.js");
+
+  assert.match(source, /RAIN_STROKE_SEGMENTS\.forEach/);
+  assert.doesNotMatch(source, /getRainStrokeSegments\(x, y/);
 });
 
 test("the composition owns a permanent bottom rain-kanji anchor", async () => {

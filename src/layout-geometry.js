@@ -27,7 +27,7 @@ export function rainDropIntervalForBand(
   rainDrop,
   bandTop,
   bandBottom,
-  horizontalPadding = 4,
+  horizontalPadding = 3,
   verticalPadding = 1,
 ) {
   const halfWidth = rainDrop.width / 2;

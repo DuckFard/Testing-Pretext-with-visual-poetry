@@ -17,6 +17,7 @@ test("the GitHub Pages artifact contains the finished editorial experience", asy
   assert.match(html, /id="pauseMotion"[^>]+aria-pressed="false"/);
   assert.match(html, /Movement 1 of 2/);
   assert.doesNotMatch(html, /(?:three|eight) movements|Previous chapter|Next chapter/i);
+  assert.doesNotMatch(html, /ノノ/);
   assert.match(html, /Content-Security-Policy/);
   assert.match(html, /id="skipToStory"/);
   assert.doesNotMatch(html, /<article[^>]+role="dialog"/);
@@ -87,4 +88,17 @@ test("the hot path uses Pretext without layout-read APIs", async () => {
     source,
     /getBoundingClientRect|offsetWidth|offsetHeight|getComputedStyle/,
   );
+});
+
+test("the published bundle uses custom ink strokes instead of font glyphs", async () => {
+  const html = await read("dist/index.html");
+  const [jsPath] = [...html.matchAll(/src="(\.\/assets\/[^\"]+\.js)"/g)].map(
+    (match) => match[1],
+  );
+  const bundledJavaScript = await read(`dist/${jsPath.slice(2)}`);
+  const bundledStyles = await read("dist/assets/styles.css");
+
+  assert.doesNotMatch(bundledJavaScript, /ノノ/);
+  assert.match(bundledJavaScript, /rain-stroke-mark/);
+  assert.match(bundledStyles, /\.rain-stroke-mark/);
 });

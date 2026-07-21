@@ -48,18 +48,18 @@ test("carveTextLineSlots returns no slots when the band is fully covered", () =>
   );
 });
 
-test("rain blockers keep only a four-pixel text halo", () => {
+test("rain blockers keep only a three-pixel text halo", () => {
   assert.deepEqual(
     geometry.rainDropIntervalForBand(
-      { x: 100, y: 100, width: 38, height: 24 },
+      { x: 100, y: 100, width: 26, height: 16 },
       90,
       110,
     ),
-    { left: 77, right: 123 },
+    { left: 84, right: 116 },
   );
   assert.equal(
     geometry.rainDropIntervalForBand(
-      { x: 100, y: 100, width: 38, height: 24 },
+      { x: 100, y: 100, width: 26, height: 16 },
       120,
       140,
     ),
@@ -78,8 +78,8 @@ test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
   const source = Object.freeze({
     x: 290,
     y: 100,
-    width: 40,
-    height: 24,
+    width: 26,
+    height: 16,
     vx: 40,
     vy: -10,
     paused: false,
@@ -95,7 +95,7 @@ test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
 
   assert.deepEqual(moved, {
     ...source,
-    x: 280,
+    x: 287,
     y: 90,
     vx: -40,
   });
@@ -105,7 +105,7 @@ test("advanceRainDrop moves immutably and bounces at stage bounds", () => {
 
 test("advanceRainDrop keeps paused and dragged drops fixed without mutation", () => {
   const bounds = { left: 0, right: 300, top: 0, bottom: 200 };
-  const paused = { x: 80, y: 90, width: 40, height: 24, vx: 40, vy: 10, paused: true, dragging: false };
+  const paused = { x: 80, y: 90, width: 26, height: 16, vx: 40, vy: 10, paused: true, dragging: false };
   const dragging = { ...paused, paused: false, dragging: true };
 
   assert.deepEqual(geometry.advanceRainDrop(paused, 1, bounds), paused);
@@ -114,8 +114,8 @@ test("advanceRainDrop keeps paused and dragged drops fixed without mutation", ()
 });
 
 test("advanceRainDropCollection preserves the active drag reference", () => {
-  const active = { id: "drop-1", x: 80, y: 90, width: 40, height: 24, vx: 40, vy: 10, paused: false, dragging: true };
-  const neighbor = { id: "drop-2", x: 180, y: 90, width: 40, height: 24, vx: 10, vy: 0, paused: false, dragging: false };
+  const active = { id: "drop-1", x: 80, y: 90, width: 26, height: 16, vx: 40, vy: 10, paused: false, dragging: true };
+  const neighbor = { id: "drop-2", x: 180, y: 90, width: 26, height: 16, vx: 10, vy: 0, paused: false, dragging: false };
   const result = geometry.advanceRainDropCollection(
     [active, neighbor],
     "drop-1",

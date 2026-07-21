@@ -212,17 +212,20 @@ a:focus-visible {
   place-content: center;
   color: var(--ink);
   text-align: center;
-  filter: drop-shadow(0 0 9px var(--paper));
+  filter: drop-shadow(0 0 2px var(--paper));
   cursor: grab;
   will-change: transform;
-  font: 500 23px/1 "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  letter-spacing: -0.2em;
-  text-indent: -0.2em;
-  opacity: 0.92;
+  opacity: 0.87;
 }
 
-.rain-drop[data-tone="plum"] {
-  color: var(--plum);
+.rain-stroke-mark {
+  display: block;
+  width: 22px;
+  height: 16px;
+  overflow: visible;
+  fill: currentColor;
+  transform: rotate(var(--mark-rotation, 0deg)) scale(var(--mark-scale, 1));
+  transform-origin: center;
 }
 
 .rain-drop.paused {

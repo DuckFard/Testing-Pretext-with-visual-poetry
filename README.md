@@ -1,6 +1,6 @@
 # When Toad Called for Rain
 
-An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). Falling `ノノ` rain marks pass through the prose as live layout obstacles, making the text recompose without DOM layout measurements. Its paper-and-ink field responds to two full-page story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
+An interactive typographic folktale built with [Pretext](https://github.com/chenglou/pretext). Tiny four-stroke rain marks pass through the prose as live layout obstacles, making the text recompose without DOM layout measurements. Its paper-and-ink field responds to two full-page story movements and is inspired by Seiichi Niikuni’s concrete poem *Rain* (1966).
 
 ## Experience
 

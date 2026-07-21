@@ -6,6 +6,7 @@ import {
   getColumnCount,
   rainDropIntervalForBand,
 } from "./layout-geometry.js";
+import { RAIN_STROKE_PATHS, RAIN_STROKE_SEGMENTS } from "./rain-mark.js";
 import { CHAPTERS, STORY_PARAGRAPHS, getChapterIndex } from "./story.js";
 
 document.documentElement.classList.add("js");
@@ -16,6 +17,7 @@ const BODY_LINE_HEIGHT = 25;
 const COLUMN_GAP = 32;
 const ROW_GAP = 72;
 const MAX_LAYOUT_ROWS = 12;
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 const stage = document.querySelector("#stage");
 const rainCanvas = document.querySelector("#rainField");
@@ -66,22 +68,39 @@ const frameTimes = [];
 const bodyLinePool = [];
 
 const rainDropDefinitions = [
-  { id: "drop-01", fx: 0.48, fy: 0.23, width: 38, height: 24, vx: 7, vy: 25, tone: "ink" },
-  { id: "drop-02", fx: 0.62, fy: 0.36, width: 40, height: 24, vx: -5, vy: 31, tone: "plum" },
-  { id: "drop-03", fx: 0.78, fy: 0.18, width: 39, height: 25, vx: 4, vy: 22, tone: "ink" },
-  { id: "drop-04", fx: 0.9, fy: 0.49, width: 38, height: 24, vx: -7, vy: 28, tone: "ink" },
-  { id: "drop-05", fx: 0.16, fy: 0.7, width: 40, height: 25, vx: 5, vy: 24, tone: "plum" },
-  { id: "drop-06", fx: 0.34, fy: 0.82, width: 37, height: 24, vx: -4, vy: 29, tone: "ink" },
-  { id: "drop-07", fx: 0.54, fy: 0.68, width: 41, height: 25, vx: 6, vy: 21, tone: "ink" },
-  { id: "drop-08", fx: 0.73, fy: 0.84, width: 38, height: 24, vx: -5, vy: 27, tone: "plum" },
-  { id: "drop-09", fx: 0.89, fy: 0.73, width: 40, height: 25, vx: 4, vy: 23, tone: "ink" },
+  { id: "drop-01", fx: 0.48, fy: 0.23, width: 26, height: 16, vx: 7, vy: 25, rotation: -2, scale: 0.96 },
+  { id: "drop-02", fx: 0.62, fy: 0.36, width: 26, height: 16, vx: -5, vy: 31, rotation: 1, scale: 1.02 },
+  { id: "drop-03", fx: 0.78, fy: 0.18, width: 26, height: 16, vx: 4, vy: 22, rotation: -1, scale: 0.92 },
+  { id: "drop-04", fx: 0.9, fy: 0.49, width: 26, height: 16, vx: -7, vy: 28, rotation: 2, scale: 1 },
+  { id: "drop-05", fx: 0.16, fy: 0.7, width: 26, height: 16, vx: 5, vy: 24, rotation: -3, scale: 1.04 },
+  { id: "drop-06", fx: 0.34, fy: 0.82, width: 26, height: 16, vx: -4, vy: 29, rotation: 1, scale: 0.94 },
+  { id: "drop-07", fx: 0.54, fy: 0.68, width: 26, height: 16, vx: 6, vy: 21, rotation: -1, scale: 1.06 },
+  { id: "drop-08", fx: 0.73, fy: 0.84, width: 26, height: 16, vx: -5, vy: 27, rotation: 2, scale: 0.98 },
+  { id: "drop-09", fx: 0.89, fy: 0.73, width: 26, height: 16, vx: 4, vy: 23, rotation: 0, scale: 1 },
 ];
+
+function createRainStrokeMark() {
+  const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+  svg.classList.add("rain-stroke-mark");
+  svg.setAttribute("viewBox", "0 0 18 14");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+
+  RAIN_STROKE_PATHS.forEach((pathData) => {
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+    path.setAttribute("d", pathData);
+    svg.appendChild(path);
+  });
+
+  return svg;
+}
 
 let rainDrops = rainDropDefinitions.map((definition) => {
   const element = document.createElement("div");
   element.className = "rain-drop";
-  element.textContent = "ノノ";
-  element.dataset.tone = definition.tone;
+  element.style.setProperty("--mark-rotation", `${definition.rotation}deg`);
+  element.style.setProperty("--mark-scale", String(definition.scale));
+  element.appendChild(createRainStrokeMark());
   stage.appendChild(element);
 
   return {
@@ -367,10 +386,11 @@ function drawRain(now, density, titleBottom) {
     rainContext.globalAlpha = (0.2 + density * 0.24) * mark.weight;
     rainContext.lineWidth = Math.max(0.65, mark.weight);
     rainContext.beginPath();
-    rainContext.moveTo(x - 3, y - mark.length / 2);
-    rainContext.lineTo(x, y + mark.length / 2);
-    rainContext.moveTo(x + 4, y - mark.length / 2);
-    rainContext.lineTo(x + 7, y + mark.length / 2);
+    const strokeScale = mark.length / 4;
+    RAIN_STROKE_SEGMENTS.forEach((segment) => {
+      rainContext.moveTo(x + segment.x1 * strokeScale, y + segment.y1 * strokeScale);
+      rainContext.lineTo(x + segment.x2 * strokeScale, y + segment.y2 * strokeScale);
+    });
     rainContext.stroke();
   });
 
@@ -622,9 +642,12 @@ window.addEventListener("keydown", (event) => {
     }
     return;
   }
+  const isInteractiveTarget =
+    event.target instanceof Element &&
+    event.target.closest('button, a[href], input, select, textarea, [contenteditable="true"]');
   if (event.key === "ArrowLeft") goToChapter(currentChapterIndex - 1);
   if (event.key === "ArrowRight") goToChapter(currentChapterIndex + 1);
-  if (event.key === " ") {
+  if (event.key === " " && !isInteractiveTarget) {
     event.preventDefault();
     setMotionHeld(!motionHeld);
   }

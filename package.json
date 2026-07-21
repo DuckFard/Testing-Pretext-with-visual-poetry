@@ -8,7 +8,7 @@
     "build": "node scripts/build.mjs",
     "preview": "node scripts/server.mjs",
     "test": "npm run test:unit && npm run build && npm run test:integration",
-    "test:unit": "node --test --experimental-test-isolation=none --experimental-test-coverage --test-coverage-include=src/layout-geometry.js --test-coverage-include=src/story.js --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/layout-geometry.test.js tests/story.test.js tests/rain-redesign.test.js",
+    "test:unit": "node --test --experimental-test-isolation=none --experimental-test-coverage --test-coverage-include=src/layout-geometry.js --test-coverage-include=src/rain-mark.js --test-coverage-include=src/story.js --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/layout-geometry.test.js tests/rain-mark.test.js tests/story.test.js tests/rain-redesign.test.js",
     "test:integration": "node --test --experimental-test-isolation=none tests/dist-smoke.test.js"
   },
   "dependencies": {
