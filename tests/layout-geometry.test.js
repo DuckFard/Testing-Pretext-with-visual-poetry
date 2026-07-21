@@ -67,6 +67,29 @@ test("rain blockers keep only a three-pixel text halo", () => {
   );
 });
 
+test("rain marks prefer the nearest whitespace slot over displacing a word", () => {
+  const occupiedWords = Object.freeze([
+    Object.freeze({ left: 20, right: 90 }),
+    Object.freeze({ left: 120, right: 190 }),
+  ]);
+  const bounds = Object.freeze({ left: 0, right: 220 });
+
+  assert.equal(
+    geometry.chooseWhitespaceBiasedX(70, 18, bounds, occupiedWords),
+    99,
+    "a mark over the first word should move to the nearest fitting whitespace",
+  );
+  assert.equal(
+    geometry.chooseWhitespaceBiasedX(105, 18, bounds, occupiedWords),
+    105,
+    "a mark already centered in whitespace should remain in place",
+  );
+  assert.deepEqual(occupiedWords, [
+    { left: 20, right: 90 },
+    { left: 120, right: 190 },
+  ]);
+});
+
 test("getColumnCount follows the editorial demo breakpoints", () => {
   assert.equal(getColumnCount(640), 1);
   assert.equal(getColumnCount(641), 2);

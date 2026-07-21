@@ -64,6 +64,67 @@ test("the custom ink marks hug the text closely", async () => {
   assert.ok(dimensions.every(({ height }) => height <= 16), "expected short rain blockers");
 });
 
+test("the canvas carries a denser field of non-blocking rain marks", async () => {
+  const source = await read("src/main.js");
+  const grid = source.match(/createRainMarks\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+
+  assert.ok(grid, "expected a deterministic rain-mark grid");
+  const [, columns, rows] = grid.map(Number);
+  assert.ok(
+    columns * rows >= 1_400,
+    `expected at least 1,400 decorative marks, received ${columns * rows}`,
+  );
+});
+
+test("rendered rain marks stay materially smaller than the surrounding type", async () => {
+  const [source, styles] = await Promise.all([
+    read("src/main.js"),
+    read("src/styles.css"),
+  ]);
+  const dimensions = [...source.matchAll(
+    /id:\s*["']drop-\d+["'][^}]*\bwidth:\s*(\d+)[^}]*\bheight:\s*(\d+)/g,
+  )].map(([, width, height]) => ({ width: Number(width), height: Number(height) }));
+  const markRule = styles.match(/\.rain-stroke-mark\s*\{([^}]*)\}/s)?.[1] ?? "";
+  const renderedWidth = Number(markRule.match(/\bwidth:\s*(\d+)px/)?.[1]);
+  const renderedHeight = Number(markRule.match(/\bheight:\s*(\d+)px/)?.[1]);
+
+  assert.ok(dimensions.every(({ width }) => width <= 20), "expected compact blocker widths");
+  assert.ok(dimensions.every(({ height }) => height <= 14), "expected compact blocker heights");
+  assert.ok(renderedWidth <= 18, `expected an SVG width no larger than 18px, received ${renderedWidth}px`);
+  assert.ok(renderedHeight <= 14, `expected an SVG height no larger than 14px, received ${renderedHeight}px`);
+});
+
+test("the live composition applies whitespace-biased rain placement", async () => {
+  const [source, styles] = await Promise.all([
+    read("src/main.js"),
+    read("src/styles.css"),
+  ]);
+
+  assert.match(source, /chooseWhitespaceBiasedX\(/);
+  assert.match(
+    source,
+    /lines\.push\(\{[^}]*right:\s*Math\.round\(slot\.right\)/s,
+    "line geometry should retain trailing whitespace for rain placement",
+  );
+  assert.doesNotMatch(
+    source,
+    /layoutRegion\(currentPreparedBody, cursor, region, rainDrops,/,
+    "moving marks should not continuously recompose the prose",
+  );
+  assert.match(styles, /\.body-line\s*\{(?=[^}]*z-index:\s*2)[^}]*\}/s);
+  assert.match(styles, /\.rain-drop\s*\{(?=[^}]*z-index:\s*1)[^}]*\}/s);
+});
+
+test("dragging a non-blocking rain mark avoids a full prose reflow", async () => {
+  const source = await read("src/main.js");
+  const pointerMoveHandler = source.match(
+    /stage\.addEventListener\(["']pointermove["'],\s*\(event\)\s*=>\s*\{.*?\n\}\);/s,
+  )?.[0] ?? "";
+
+  assert.match(pointerMoveHandler, /activeRainDrop\.x\s*=/);
+  assert.doesNotMatch(pointerMoveHandler, /needsRender\s*=\s*true/);
+});
+
 test("keyboard shortcuts preserve native activation for interactive controls", async () => {
   const source = await read("src/main.js");
 

@@ -43,6 +43,48 @@ export function rainDropIntervalForBand(
   };
 }
 
+export function chooseWhitespaceBiasedX(
+  preferredX,
+  blockerWidth,
+  bounds,
+  occupiedWords,
+) {
+  const halfWidth = blockerWidth / 2;
+  const sortedWords = [...occupiedWords]
+    .map((word) => ({
+      left: Math.max(bounds.left, word.left),
+      right: Math.min(bounds.right, word.right),
+    }))
+    .filter((word) => word.right > word.left)
+    .sort((a, b) => a.left - b.left);
+  const whitespace = [];
+  let cursor = bounds.left;
+
+  sortedWords.forEach((word) => {
+    if (word.left > cursor) whitespace.push({ left: cursor, right: word.left });
+    cursor = Math.max(cursor, word.right);
+  });
+  if (cursor < bounds.right) whitespace.push({ left: cursor, right: bounds.right });
+
+  const candidates = whitespace
+    .filter((gap) => gap.right - gap.left >= blockerWidth)
+    .map((gap) => ({
+      left: gap.left + halfWidth,
+      right: gap.right - halfWidth,
+    }));
+
+  if (candidates.length === 0) {
+    return Math.max(bounds.left + halfWidth, Math.min(bounds.right - halfWidth, preferredX));
+  }
+
+  return candidates.reduce((nearestX, gap) => {
+    const candidateX = Math.max(gap.left, Math.min(gap.right, preferredX));
+    return Math.abs(candidateX - preferredX) < Math.abs(nearestX - preferredX)
+      ? candidateX
+      : nearestX;
+  }, candidates[0].left);
+}
+
 export function getColumnCount(width) {
   if (width > 1000) return 3;
   if (width > 640) return 2;

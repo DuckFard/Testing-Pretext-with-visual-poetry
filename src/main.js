@@ -3,6 +3,7 @@ import { layoutNextLine, prepareWithSegments } from "@chenglou/pretext";
 import {
   advanceRainDropCollection,
   carveTextLineSlots,
+  chooseWhitespaceBiasedX,
   getColumnCount,
   rainDropIntervalForBand,
 } from "./layout-geometry.js";
@@ -64,19 +65,27 @@ let readingReturnFocus = null;
 let pointerX = -10_000;
 let pointerY = -10_000;
 let rainPhase = 0;
+let currentTitleBottom = 0;
+let whitespaceLineGeometry = [];
 const frameTimes = [];
 const bodyLinePool = [];
 
 const rainDropDefinitions = [
-  { id: "drop-01", fx: 0.48, fy: 0.23, width: 26, height: 16, vx: 7, vy: 25, rotation: -2, scale: 0.96 },
-  { id: "drop-02", fx: 0.62, fy: 0.36, width: 26, height: 16, vx: -5, vy: 31, rotation: 1, scale: 1.02 },
-  { id: "drop-03", fx: 0.78, fy: 0.18, width: 26, height: 16, vx: 4, vy: 22, rotation: -1, scale: 0.92 },
-  { id: "drop-04", fx: 0.9, fy: 0.49, width: 26, height: 16, vx: -7, vy: 28, rotation: 2, scale: 1 },
-  { id: "drop-05", fx: 0.16, fy: 0.7, width: 26, height: 16, vx: 5, vy: 24, rotation: -3, scale: 1.04 },
-  { id: "drop-06", fx: 0.34, fy: 0.82, width: 26, height: 16, vx: -4, vy: 29, rotation: 1, scale: 0.94 },
-  { id: "drop-07", fx: 0.54, fy: 0.68, width: 26, height: 16, vx: 6, vy: 21, rotation: -1, scale: 1.06 },
-  { id: "drop-08", fx: 0.73, fy: 0.84, width: 26, height: 16, vx: -5, vy: 27, rotation: 2, scale: 0.98 },
-  { id: "drop-09", fx: 0.89, fy: 0.73, width: 26, height: 16, vx: 4, vy: 23, rotation: 0, scale: 1 },
+  { id: "drop-01", fx: 0.46, fy: 0.2, width: 18, height: 12, vx: 0, vy: 22, rotation: -2, scale: 0.86 },
+  { id: "drop-02", fx: 0.55, fy: 0.31, width: 18, height: 12, vx: 0, vy: 27, rotation: 1, scale: 0.9 },
+  { id: "drop-03", fx: 0.64, fy: 0.16, width: 18, height: 12, vx: 0, vy: 19, rotation: -1, scale: 0.82 },
+  { id: "drop-04", fx: 0.73, fy: 0.43, width: 18, height: 12, vx: 0, vy: 25, rotation: 2, scale: 0.88 },
+  { id: "drop-05", fx: 0.83, fy: 0.27, width: 18, height: 12, vx: 0, vy: 21, rotation: -3, scale: 0.92 },
+  { id: "drop-06", fx: 0.92, fy: 0.51, width: 18, height: 12, vx: 0, vy: 28, rotation: 1, scale: 0.84 },
+  { id: "drop-07", fx: 0.12, fy: 0.64, width: 18, height: 12, vx: 0, vy: 20, rotation: -1, scale: 0.94 },
+  { id: "drop-08", fx: 0.22, fy: 0.76, width: 18, height: 12, vx: 0, vy: 26, rotation: 2, scale: 0.87 },
+  { id: "drop-09", fx: 0.31, fy: 0.58, width: 18, height: 12, vx: 0, vy: 23, rotation: 0, scale: 0.9 },
+  { id: "drop-10", fx: 0.4, fy: 0.83, width: 18, height: 12, vx: 0, vy: 29, rotation: -2, scale: 0.83 },
+  { id: "drop-11", fx: 0.49, fy: 0.67, width: 18, height: 12, vx: 0, vy: 24, rotation: 1, scale: 0.89 },
+  { id: "drop-12", fx: 0.58, fy: 0.88, width: 18, height: 12, vx: 0, vy: 19, rotation: -1, scale: 0.85 },
+  { id: "drop-13", fx: 0.68, fy: 0.72, width: 18, height: 12, vx: 0, vy: 27, rotation: 2, scale: 0.93 },
+  { id: "drop-14", fx: 0.78, fy: 0.91, width: 18, height: 12, vx: 0, vy: 22, rotation: -2, scale: 0.86 },
+  { id: "drop-15", fx: 0.89, fy: 0.79, width: 18, height: 12, vx: 0, vy: 25, rotation: 1, scale: 0.91 },
 ];
 
 function createRainStrokeMark() {
@@ -117,7 +126,7 @@ let rainDrops = rainDropDefinitions.map((definition) => {
   };
 });
 
-const rainMarks = createRainMarks(34, 24);
+const rainMarks = createRainMarks(48, 32);
 
 function createRainMarks(columns, rows) {
   let seed = 1_966;
@@ -135,9 +144,54 @@ function createRainMarks(columns, rows) {
       y: (row + 0.5 + (random() - 0.5) * 0.12) / rows,
       reveal: random(),
       phase: random() * Math.PI * 2,
-      length: 3.4 + random() * 2.1,
-      weight: 0.62 + random() * 0.5,
+      length: 2.5 + random() * 1.7,
+      weight: 0.52 + random() * 0.38,
     };
+  });
+}
+
+function getLineWordGeometry(line) {
+  const words = [];
+  const matcher = /\S+/g;
+  let match;
+
+  while ((match = matcher.exec(line.text)) !== null) {
+    const left = line.x + rainContext.measureText(line.text.slice(0, match.index)).width;
+    words.push({
+      left,
+      right: left + rainContext.measureText(match[0]).width,
+    });
+  }
+
+  return {
+    ...line,
+    words,
+  };
+}
+
+function cacheWhitespaceGeometry(lines) {
+  rainContext.font = BODY_FONT;
+  whitespaceLineGeometry = lines
+    .map(getLineWordGeometry)
+    .filter((line) => line.words.length > 1 && line.right - line.x >= 54);
+}
+
+function biasRainDropsTowardWhitespace() {
+  rainDrops = rainDrops.map((rainDrop) => {
+    if (rainDrop.dragging || whitespaceLineGeometry.length === 0) return rainDrop;
+    const nearestLine = whitespaceLineGeometry.reduce((nearest, line) => {
+      const distance = Math.abs(line.y + BODY_LINE_HEIGHT / 2 - rainDrop.y);
+      const nearestDistance = Math.abs(nearest.y + BODY_LINE_HEIGHT / 2 - rainDrop.y);
+      return distance < nearestDistance ? line : nearest;
+    });
+    const targetX = chooseWhitespaceBiasedX(
+      rainDrop.x,
+      rainDrop.width,
+      { left: nearestLine.x, right: nearestLine.right },
+      nearestLine.words,
+    );
+
+    return { ...rainDrop, x: targetX };
   });
 }
 
@@ -244,7 +298,12 @@ function layoutRegion(prepared, startCursor, region, blockers, rectangleBlockers
         exhausted = true;
         break;
       }
-      lines.push({ x: Math.round(slot.left), y: Math.round(lineTop), text: line.text });
+      lines.push({
+        x: Math.round(slot.left),
+        y: Math.round(lineTop),
+        right: Math.round(slot.right),
+        text: line.text,
+      });
       cursor = line.end;
     }
 
@@ -272,6 +331,7 @@ function createOverflowRegions(metrics, rowIndex) {
 function renderEditorialLayout() {
   const startedAt = performance.now();
   const metrics = getCompositionMetrics();
+  currentTitleBottom = metrics.titleBottom;
   const allLines = [];
   let cursor = { segmentIndex: 0, graphemeIndex: 0 };
   let exhausted = false;
@@ -293,7 +353,7 @@ function renderEditorialLayout() {
 
   for (const region of metrics.initialRegions) {
     if (exhausted) break;
-    const result = layoutRegion(currentPreparedBody, cursor, region, rainDrops, [kanjiBlocker]);
+    const result = layoutRegion(currentPreparedBody, cursor, region, [], [kanjiBlocker]);
     allLines.push(...result.lines);
     cursor = result.cursor;
     exhausted = result.exhausted;
@@ -304,7 +364,7 @@ function renderEditorialLayout() {
     finalBottom = regions[0].y + regions[0].height;
     for (const region of regions) {
       if (exhausted) break;
-      const result = layoutRegion(currentPreparedBody, cursor, region, rainDrops, [kanjiBlocker]);
+      const result = layoutRegion(currentPreparedBody, cursor, region, [], [kanjiBlocker]);
       allLines.push(...result.lines);
       cursor = result.cursor;
       exhausted = result.exhausted;
@@ -330,8 +390,10 @@ function renderEditorialLayout() {
     element.style.lineHeight = `${BODY_LINE_HEIGHT}px`;
   });
 
+  cacheWhitespaceGeometry(allLines);
+  biasRainDropsTowardWhitespace();
   renderRainDrops();
-  drawRain(performance.now(), CHAPTERS[currentChapterIndex].rainLevel, metrics.titleBottom);
+  drawRain(performance.now(), CHAPTERS[currentChapterIndex].rainLevel, currentTitleBottom);
 
   const elapsed = performance.now() - startedAt;
   statLines.textContent = String(allLines.length);
@@ -441,9 +503,13 @@ function animate(now) {
   lastFrameTime = now;
 
   if (!motionHeld) updateRainDrops(deltaSeconds);
-  if (needsRender || !motionHeld || activeRainDrop) {
+  if (needsRender) {
     renderEditorialLayout();
     needsRender = false;
+  } else if (!motionHeld || activeRainDrop) {
+    biasRainDropsTowardWhitespace();
+    renderRainDrops();
+    drawRain(now, CHAPTERS[currentChapterIndex].rainLevel, currentTitleBottom);
   }
   updateFps(now);
 
@@ -578,7 +644,6 @@ stage.addEventListener("pointermove", (event) => {
 
   activeRainDrop.x = activeRainDrop.dragStartDropX + (pointerX - activeRainDrop.dragStartX);
   activeRainDrop.y = activeRainDrop.dragStartDropY + (pointerY - activeRainDrop.dragStartY);
-  needsRender = true;
   scheduleFrame();
 });
 
