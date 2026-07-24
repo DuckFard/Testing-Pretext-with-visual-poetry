@@ -80,7 +80,7 @@ test("the moving rain is denser and falls decisively faster", async () => {
   );
 });
 
-test("a falling mark creates a visible, disposable splash when it lands", async () => {
+test("a falling mark randomly becomes a visible, disposable midair splash", async () => {
   const [source, styles] = await Promise.all([
     read("src/main.js"),
     read("src/styles.css"),
@@ -88,15 +88,18 @@ test("a falling mark creates a visible, disposable splash when it lands", async 
 
   assert.match(source, /function\s+createRainSplash\s*\(/);
   assert.match(source, /className\s*=\s*["']rain-splash["']/);
+  assert.match(source, /getRandomSplashProgress\(\)/);
+  assert.match(source, /shouldSplashMidair\(/);
   assert.match(
     source,
     /(?:animationend[^;]*(?:remove|removeChild)|(?:remove|removeChild)[^;]*animationend)/s,
   );
   assert.match(
     source,
-    /\bvy\s*>\s*0[\s\S]{0,500}\bvy\s*<\s*0/,
-    "expected the splash to be triggered by a downward-to-upward landing impact",
+    /createRainSplash\(rainDrop\.x,\s*rainDrop\.y\)/,
+    "expected the splash to appear at the drop's current midair position",
   );
+  assert.doesNotMatch(source, /createRainSplash\(rainDrop\.x,\s*bounds\.bottom\)/);
   assert.match(styles, /\.rain-splash\b/);
   assert.match(styles, /@keyframes\s+rain-splash\b/);
   assert.match(

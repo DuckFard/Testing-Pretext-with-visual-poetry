@@ -43,6 +43,19 @@ export function rainDropIntervalForBand(
   };
 }
 
+export function getRandomSplashProgress(random = Math.random) {
+  const normalizedRandom = Math.max(0, Math.min(1, random()));
+  return 0.2 + normalizedRandom * 0.6;
+}
+
+export function shouldSplashMidair(rainDrop, bounds) {
+  if (rainDrop.paused || rainDrop.dragging || rainDrop.vy <= 0) return false;
+
+  const splashY =
+    bounds.top + (bounds.bottom - bounds.top) * rainDrop.splashProgress;
+  return rainDrop.y >= splashY;
+}
+
 export function getColumnCount(width) {
   if (width > 1000) return 3;
   if (width > 640) return 2;

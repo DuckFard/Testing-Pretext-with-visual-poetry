@@ -3,8 +3,10 @@ import { layoutNextLine, prepareWithSegments } from "@chenglou/pretext";
 import {
   advanceRainDropCollection,
   carveTextLineSlots,
+  getRandomSplashProgress,
   getColumnCount,
   rainDropIntervalForBand,
+  shouldSplashMidair,
 } from "./layout-geometry.js";
 import { RAIN_STROKE_PATHS, RAIN_STROKE_SEGMENTS } from "./rain-mark.js";
 import { CHAPTERS, STORY_PARAGRAPHS, getChapterIndex } from "./story.js";
@@ -111,6 +113,7 @@ let rainDrops = rainDropDefinitions.map((definition) => {
     ...definition,
     x: definition.fx * viewport.width,
     y: Math.max(160, definition.fy * viewport.height),
+    splashProgress: getRandomSplashProgress(),
     paused: false,
     dragging: false,
     dragStartX: 0,
@@ -432,7 +435,6 @@ function updateRainDrops(deltaSeconds) {
     bottom: Math.max(textTop + 220, textBottom),
   };
 
-  const previousRainDrops = rainDrops;
   const advancedRainDrops = advanceRainDropCollection(
     rainDrops,
     activeRainDrop?.id ?? null,
@@ -440,15 +442,23 @@ function updateRainDrops(deltaSeconds) {
     bounds,
   );
 
-  rainDrops = advancedRainDrops.map((rainDrop, index) => {
-    const landed =
-      previousRainDrops[index].vy > 0 &&
-      rainDrop.vy < 0 &&
-      !rainDrop.dragging &&
-      !rainDrop.paused;
-    if (landed) createRainSplash(rainDrop.x, bounds.bottom);
+  rainDrops = advancedRainDrops.map((rainDrop) => {
+    if (shouldSplashMidair(rainDrop, bounds)) {
+      createRainSplash(rainDrop.x, rainDrop.y);
+      return {
+        ...rainDrop,
+        y: bounds.top + rainDrop.height / 2,
+        vy: Math.abs(rainDrop.vy),
+        splashProgress: getRandomSplashProgress(),
+      };
+    }
     if (rainDrop.dragging || rainDrop.paused || rainDrop.vy >= 0) return rainDrop;
-    return { ...rainDrop, y: bounds.top + rainDrop.height / 2, vy: Math.abs(rainDrop.vy) };
+    return {
+      ...rainDrop,
+      y: bounds.top + rainDrop.height / 2,
+      vy: Math.abs(rainDrop.vy),
+      splashProgress: getRandomSplashProgress(),
+    };
   });
 }
 

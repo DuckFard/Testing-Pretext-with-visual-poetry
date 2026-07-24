@@ -127,3 +127,24 @@ test("advanceRainDropCollection preserves the active drag reference", () => {
   assert.notEqual(result[1], neighbor);
   assert.equal(result[1].x, 190);
 });
+
+test("random splash points stay within the middle of a fall", () => {
+  assert.equal(geometry.getRandomSplashProgress(() => 0), 0.2);
+  assert.equal(geometry.getRandomSplashProgress(() => 0.5), 0.5);
+  assert.equal(geometry.getRandomSplashProgress(() => 1), 0.8);
+});
+
+test("a descending drop splashes only after reaching its own midair point", () => {
+  const bounds = { top: 100, bottom: 500 };
+  const fallingDrop = {
+    y: 310,
+    vy: 50,
+    splashProgress: 0.5,
+    paused: false,
+    dragging: false,
+  };
+
+  assert.equal(geometry.shouldSplashMidair(fallingDrop, bounds), true);
+  assert.equal(geometry.shouldSplashMidair({ ...fallingDrop, y: 290 }, bounds), false);
+  assert.equal(geometry.shouldSplashMidair({ ...fallingDrop, paused: true }, bounds), false);
+});
