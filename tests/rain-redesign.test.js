@@ -64,6 +64,47 @@ test("the custom ink marks hug the text closely", async () => {
   assert.ok(dimensions.every(({ height }) => height <= 16), "expected short rain blockers");
 });
 
+test("the moving rain is denser and falls decisively faster", async () => {
+  const source = await read("src/main.js");
+  const definitions = [...source.matchAll(
+    /id:\s*["']drop-\d+["'][^}]*\bvy:\s*(-?\d+(?:\.\d+)?)/g,
+  )].map(([, verticalSpeed]) => Number(verticalSpeed));
+
+  assert.ok(
+    definitions.length > 9,
+    "expected more moving rain marks than the previous nine-drop composition",
+  );
+  assert.ok(
+    definitions.every((verticalSpeed) => verticalSpeed >= 40),
+    "expected every moving rain mark to fall at least 40 pixels per second",
+  );
+});
+
+test("a falling mark creates a visible, disposable splash when it lands", async () => {
+  const [source, styles] = await Promise.all([
+    read("src/main.js"),
+    read("src/styles.css"),
+  ]);
+
+  assert.match(source, /function\s+createRainSplash\s*\(/);
+  assert.match(source, /className\s*=\s*["']rain-splash["']/);
+  assert.match(
+    source,
+    /(?:animationend[^;]*(?:remove|removeChild)|(?:remove|removeChild)[^;]*animationend)/s,
+  );
+  assert.match(
+    source,
+    /\bvy\s*>\s*0[\s\S]{0,500}\bvy\s*<\s*0/,
+    "expected the splash to be triggered by a downward-to-upward landing impact",
+  );
+  assert.match(styles, /\.rain-splash\b/);
+  assert.match(styles, /@keyframes\s+rain-splash\b/);
+  assert.match(
+    styles,
+    /\.rain-splash\s*\{(?=[^}]*animation\s*:)(?=[^}]*pointer-events\s*:\s*none)[^}]*\}/s,
+  );
+});
+
 test("keyboard shortcuts preserve native activation for interactive controls", async () => {
   const source = await read("src/main.js");
 

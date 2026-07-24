@@ -68,15 +68,19 @@ const frameTimes = [];
 const bodyLinePool = [];
 
 const rainDropDefinitions = [
-  { id: "drop-01", fx: 0.48, fy: 0.23, width: 26, height: 16, vx: 7, vy: 25, rotation: -2, scale: 0.96 },
-  { id: "drop-02", fx: 0.62, fy: 0.36, width: 26, height: 16, vx: -5, vy: 31, rotation: 1, scale: 1.02 },
-  { id: "drop-03", fx: 0.78, fy: 0.18, width: 26, height: 16, vx: 4, vy: 22, rotation: -1, scale: 0.92 },
-  { id: "drop-04", fx: 0.9, fy: 0.49, width: 26, height: 16, vx: -7, vy: 28, rotation: 2, scale: 1 },
-  { id: "drop-05", fx: 0.16, fy: 0.7, width: 26, height: 16, vx: 5, vy: 24, rotation: -3, scale: 1.04 },
-  { id: "drop-06", fx: 0.34, fy: 0.82, width: 26, height: 16, vx: -4, vy: 29, rotation: 1, scale: 0.94 },
-  { id: "drop-07", fx: 0.54, fy: 0.68, width: 26, height: 16, vx: 6, vy: 21, rotation: -1, scale: 1.06 },
-  { id: "drop-08", fx: 0.73, fy: 0.84, width: 26, height: 16, vx: -5, vy: 27, rotation: 2, scale: 0.98 },
-  { id: "drop-09", fx: 0.89, fy: 0.73, width: 26, height: 16, vx: 4, vy: 23, rotation: 0, scale: 1 },
+  { id: "drop-01", fx: 0.48, fy: 0.23, width: 26, height: 16, vx: 7, vy: 54, rotation: -2, scale: 0.96 },
+  { id: "drop-02", fx: 0.62, fy: 0.36, width: 26, height: 16, vx: -5, vy: 62, rotation: 1, scale: 1.02 },
+  { id: "drop-03", fx: 0.78, fy: 0.18, width: 26, height: 16, vx: 4, vy: 49, rotation: -1, scale: 0.92 },
+  { id: "drop-04", fx: 0.9, fy: 0.49, width: 26, height: 16, vx: -7, vy: 58, rotation: 2, scale: 1 },
+  { id: "drop-05", fx: 0.16, fy: 0.7, width: 26, height: 16, vx: 5, vy: 52, rotation: -3, scale: 1.04 },
+  { id: "drop-06", fx: 0.34, fy: 0.82, width: 26, height: 16, vx: -4, vy: 65, rotation: 1, scale: 0.94 },
+  { id: "drop-07", fx: 0.54, fy: 0.68, width: 26, height: 16, vx: 6, vy: 47, rotation: -1, scale: 1.06 },
+  { id: "drop-08", fx: 0.73, fy: 0.84, width: 26, height: 16, vx: -5, vy: 60, rotation: 2, scale: 0.98 },
+  { id: "drop-09", fx: 0.89, fy: 0.73, width: 26, height: 16, vx: 4, vy: 55, rotation: 0, scale: 1 },
+  { id: "drop-10", fx: 0.24, fy: 0.31, width: 26, height: 16, vx: -6, vy: 63, rotation: 2, scale: 0.95 },
+  { id: "drop-11", fx: 0.43, fy: 0.52, width: 26, height: 16, vx: 5, vy: 51, rotation: -2, scale: 1.03 },
+  { id: "drop-12", fx: 0.68, fy: 0.61, width: 26, height: 16, vx: -4, vy: 68, rotation: 1, scale: 0.97 },
+  { id: "drop-13", fx: 0.96, fy: 0.29, width: 26, height: 16, vx: 6, vy: 57, rotation: -1, scale: 1.01 },
 ];
 
 function createRainStrokeMark() {
@@ -353,6 +357,16 @@ function renderRainDrops() {
   });
 }
 
+function createRainSplash(x, y) {
+  const splash = document.createElement("span");
+  splash.className = "rain-splash";
+  splash.setAttribute("aria-hidden", "true");
+  splash.style.left = `${x}px`;
+  splash.style.top = `${y}px`;
+  splash.addEventListener("animationend", () => splash.remove(), { once: true });
+  stage.appendChild(splash);
+}
+
 function resizeRainCanvas() {
   const pixelWidth = Math.round(viewport.width * viewport.dpr);
   const pixelHeight = Math.round(stageHeight * viewport.dpr);
@@ -418,12 +432,21 @@ function updateRainDrops(deltaSeconds) {
     bottom: Math.max(textTop + 220, textBottom),
   };
 
-  rainDrops = advanceRainDropCollection(
+  const previousRainDrops = rainDrops;
+  const advancedRainDrops = advanceRainDropCollection(
     rainDrops,
     activeRainDrop?.id ?? null,
     deltaSeconds,
     bounds,
-  ).map((rainDrop) => {
+  );
+
+  rainDrops = advancedRainDrops.map((rainDrop, index) => {
+    const landed =
+      previousRainDrops[index].vy > 0 &&
+      rainDrop.vy < 0 &&
+      !rainDrop.dragging &&
+      !rainDrop.paused;
+    if (landed) createRainSplash(rainDrop.x, bounds.bottom);
     if (rainDrop.dragging || rainDrop.paused || rainDrop.vy >= 0) return rainDrop;
     return { ...rainDrop, y: bounds.top + rainDrop.height / 2, vy: Math.abs(rainDrop.vy) };
   });

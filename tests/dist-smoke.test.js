@@ -102,3 +102,16 @@ test("the published bundle uses custom ink strokes instead of font glyphs", asyn
   assert.match(bundledJavaScript, /rain-stroke-mark/);
   assert.match(bundledStyles, /\.rain-stroke-mark/);
 });
+
+test("the published rain field includes animated landing splashes", async () => {
+  const html = await read("dist/index.html");
+  const [jsPath] = [...html.matchAll(/src="(\.\/assets\/[^\"]+\.js)"/g)].map(
+    (match) => match[1],
+  );
+  const bundledJavaScript = await read(`dist/${jsPath.slice(2)}`);
+  const bundledStyles = await read("dist/assets/styles.css");
+
+  assert.match(bundledJavaScript, /rain-splash/);
+  assert.match(bundledStyles, /\.rain-splash\b/);
+  assert.match(bundledStyles, /@keyframes\s+rain-splash\b/);
+});
